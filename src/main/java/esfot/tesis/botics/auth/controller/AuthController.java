@@ -161,9 +161,14 @@ public class AuthController {
                     .map(RefreshToken::getUser)
                     .map(user -> {
                         ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(user);
+                        ResponseCookie refreshCookie = ResponseCookie
+                                .from("refreshToken", refreshToken)
+                                .path("/api")
+                                .httpOnly(true)
+                                .build();
                         return ResponseEntity.ok()
                                 .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
-                                .header(HttpHeaders.SET_COOKIE, refreshToken)
+                                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                                 .body(new MessageResponse("Token is refreshed successfully!"));
                     })
                     .orElseThrow(() -> new TokenRefreshException(refreshToken,

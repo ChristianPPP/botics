@@ -1,7 +1,5 @@
 package esfot.tesis.botics.auth.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import esfot.tesis.botics.entity.Avatar;
 import esfot.tesis.botics.entity.Comment;
 import esfot.tesis.botics.entity.Reserve;
@@ -60,6 +58,9 @@ public class User{
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "avatar_id")
     private Avatar avatar;
+
+    @Column(name = "reset_password_token")
+    private String resetPasswordToken;
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(name = "user_roles",

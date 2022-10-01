@@ -5,6 +5,7 @@ import esfot.tesis.botics.auth.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -20,6 +21,32 @@ public class UserDetailsServiceImpl implements UserDetailsService{
         User user = userRepository.findByUsername(user_name).
                 orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + user_name));
         return UserDetailsImpl.build(user);
+    }
+
+    @Override
+    public String updateResetPasswordToken(String token, String email) {
+        User user = userRepository.findByEmail(email);
+        if (user != null) {
+            user.setResetPasswordToken(token);
+            userRepository.save(user);
+            return "Reset password token updated.";
+        } else {
+            return "Email not found.";
+        }
+    }
+
+    @Override
+    public User getByResetPasswordToken(String token) {
+        return userRepository.findByResetPasswordToken(token);
+    }
+
+    @Override
+    public void resetPassword(User user, String newPassword) {
+        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        String encodedPassword = passwordEncoder.encode(newPassword);
+        user.setPassword(encodedPassword);
+        user.setResetPasswordToken(null);
+        userRepository.save(user);
     }
 
     public UserDetailsServiceImpl() {
