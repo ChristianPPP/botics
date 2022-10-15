@@ -12,8 +12,7 @@ import javax.validation.constraints.Size;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "softwares",
-        uniqueConstraints = @UniqueConstraint(columnNames = "name"))
+@Table(name = "softwares")
 public class Software {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)

@@ -1,22 +1,30 @@
 package esfot.tesis.botics.auth.controller;
 
 import esfot.tesis.botics.auth.entity.User;
+import esfot.tesis.botics.auth.payload.request.ResetPasswordRequest;
+import esfot.tesis.botics.auth.payload.response.ErrorResponse;
 import esfot.tesis.botics.auth.payload.response.MessageResponse;
 import esfot.tesis.botics.auth.security.service.UserDetailsServiceImpl;
+import esfot.tesis.botics.auth.validator.ForgotPasswordValidator;
+import esfot.tesis.botics.auth.validator.ResetPasswordValidator;
 import lombok.extern.slf4j.Slf4j;
 import net.bytebuddy.utility.RandomString;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpServletRequest;
-import javax.validation.Valid;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 @Slf4j
@@ -30,8 +38,22 @@ public class ForgotPasswordController {
     @Autowired
     UserDetailsServiceImpl userService;
 
+    @Autowired
+    ForgotPasswordValidator forgotPasswordValidator;
+
+    @Autowired
+    ResetPasswordValidator resetPasswordValidator;
+
     @PostMapping("/forgot")
-    public ResponseEntity<?> forgotPassword(HttpServletRequest request, @Valid @RequestParam String email) {
+    public ResponseEntity<?> forgotPassword(HttpServletRequest request, @RequestParam String email, BindingResult bindingResult) {
+        List<String> errors = new ArrayList<>();
+        ResourceBundleMessageSource resourceBundleMessageSource = new ResourceBundleMessageSource();
+        resourceBundleMessageSource.setBasename("messages");
+        forgotPasswordValidator.validate(email, bindingResult);
+        if (bindingResult.hasErrors()) {
+            bindingResult.getAllErrors().forEach(e -> errors.add(resourceBundleMessageSource.getMessage(e, Locale.US)));
+            return ResponseEntity.badRequest().body(new ErrorResponse("Form error.",errors));
+        }
         String token = RandomString.make(30);
         String baseUrl = ServletUriComponentsBuilder
                 .fromRequestUri(request)
@@ -73,7 +95,18 @@ public class ForgotPasswordController {
     }
 
     @PostMapping("/reset")
-    public ResponseEntity<?> resetPassword(@Valid @RequestParam String password, @Valid @RequestParam String confirmPassword, @RequestParam("token") String token) {
+    public ResponseEntity<?> resetPassword(@RequestParam String password, @RequestParam String confirmPassword, @RequestParam("token") String token, BindingResult bindingResult) {
+        ResetPasswordRequest resetPasswordRequest = new ResetPasswordRequest();
+        resetPasswordRequest.setPassword(password);
+        resetPasswordRequest.setConfirmPassword(confirmPassword);
+        resetPasswordValidator.validate(resetPasswordRequest, bindingResult);
+        List<String> errors = new ArrayList<>();
+        ResourceBundleMessageSource resourceBundleMessageSource = new ResourceBundleMessageSource();
+        resourceBundleMessageSource.setBasename("messages");
+        if (bindingResult.hasErrors()) {
+            bindingResult.getAllErrors().forEach(e -> errors.add(resourceBundleMessageSource.getMessage(e, Locale.US)));
+            return ResponseEntity.badRequest().body(new ErrorResponse("Form error.",errors));
+        }
         User user = userService.getByResetPasswordToken(token);
         if (user == null) {
             return ResponseEntity.badRequest().body(new MessageResponse("Invalid reset token."));

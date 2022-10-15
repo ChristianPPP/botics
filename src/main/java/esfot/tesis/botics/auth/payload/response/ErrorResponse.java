@@ -7,11 +7,12 @@ import java.util.List;
 
 @Getter
 @Setter
-public class MessageResponse {
+public class ErrorResponse {
     private String message;
+    private List<String> errors;
 
-    public MessageResponse(String message) {
+    public ErrorResponse(String message, List<String> errors) {
         this.message = message;
+        this.errors = errors;
     }
-
 }

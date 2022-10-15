@@ -35,6 +35,15 @@ public class Computer {
     @Column(name = "serial_cpu")
     private String serialCpu;
 
+    @Column(name = "code_monitor")
+    private String codeMonitor;
+
+    @Column(name = "code_keyboard")
+    private String codeKeyboard;
+
+    @Column(name = "code_cpu")
+    private String codeCpu;
+
     @ColumnDefault("1")
     @Column(name = "state", nullable = false)
     private String state;
@@ -52,16 +61,22 @@ public class Computer {
     @Column(name = "processor")
     private String processor;
 
+    @Column(name = "operative_system")
+    private String operativeSystem;
+
     @Column(name = "details")
     private String details;
 
     @Column(name = "observations")
     private String observations;
 
+
     @ManyToOne(fetch = FetchType.LAZY)
     private Lab lab;
 
-    public Computer(String hostName, String serialMonitor, String serialKeyboard, String serialCpu, String state, String model, String hardDrive, String ram, String processor, String details, String observations) {
+    public Computer(String hostName, String serialMonitor, String serialKeyboard, String serialCpu,
+                    String state, String model, String hardDrive, String ram, String processor, String operativeSystem,
+                    String details, String observations) {
         this.hostName = hostName;
         this.serialMonitor = serialMonitor;
         this.serialKeyboard = serialKeyboard;
@@ -71,6 +86,7 @@ public class Computer {
         this.hardDrive = hardDrive;
         this.ram = ram;
         this.processor = processor;
+        this.operativeSystem = operativeSystem;
         this.details = details;
         this.observations = observations;
     }

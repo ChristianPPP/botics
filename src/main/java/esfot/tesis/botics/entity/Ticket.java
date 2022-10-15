@@ -25,14 +25,14 @@ public class Ticket {
     private String subject;
 
     @NotBlank
-    @Column(name = "message", nullable = false)
-    private String message;
+    @Column(name = "description", nullable = false)
+    private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private User user;
 
-    public Ticket(String subject, String message) {
+    public Ticket(String subject, String description) {
         this.subject = subject;
-        this.message = message;
+        this.description = description;
     }
 }

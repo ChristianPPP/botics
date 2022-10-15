@@ -24,6 +24,12 @@ public class UserDetailsServiceImpl implements UserDetailsService{
     }
 
     @Override
+    public UserDetails loadUserByEmail(String email) {
+        User user = userRepository.findByEmail(email);
+        return UserDetailsImpl.build(user);
+    }
+
+    @Override
     public String updateResetPasswordToken(String token, String email) {
         User user = userRepository.findByEmail(email);
         if (user != null) {

@@ -6,6 +6,7 @@ import esfot.tesis.botics.auth.entity.User;
 import esfot.tesis.botics.auth.entity.enums.ERole;
 import esfot.tesis.botics.auth.payload.request.LoginRequest;
 import esfot.tesis.botics.auth.payload.request.SignupRequest;
+import esfot.tesis.botics.auth.payload.response.ErrorResponse;
 import esfot.tesis.botics.auth.payload.response.MessageResponse;
 import esfot.tesis.botics.auth.payload.response.UserInfoResponse;
 import esfot.tesis.botics.auth.repository.RoleRepository;
@@ -14,8 +15,11 @@ import esfot.tesis.botics.auth.security.jwt.JwtUtils;
 import esfot.tesis.botics.auth.security.jwt.TokenRefreshException;
 import esfot.tesis.botics.auth.security.service.RefreshTokenService;
 import esfot.tesis.botics.auth.security.service.UserDetailsImpl;
+import esfot.tesis.botics.auth.validator.SigninValidator;
+import esfot.tesis.botics.auth.validator.SignupValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -25,14 +29,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.validation.Valid;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -58,8 +59,30 @@ public class AuthController {
     @Autowired
     JwtUtils jwtUtils;
 
+    @Autowired
+    SignupValidator signupValidator;
+
+    @Autowired
+    SigninValidator signinValidator;
+
     @PostMapping("/signin")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest, BindingResult bindingResult) {
+        List<String> errors = new ArrayList<>();
+        ResourceBundleMessageSource resourceBundleMessageSource = new ResourceBundleMessageSource();
+        resourceBundleMessageSource.setBasename("messages");
+        signinValidator.validate(loginRequest, bindingResult);
+        if (bindingResult.hasErrors()) {
+            bindingResult.getAllErrors().forEach(e -> errors.add(resourceBundleMessageSource.getMessage(e, Locale.US)));
+            return ResponseEntity.badRequest().body(new ErrorResponse("Form error.",errors));
+        }
+        if (loginRequest.getUsername().contains("@")) {
+            User user = userRepository.findByEmail(loginRequest.getUsername());
+            if (user == null) {
+                authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
+            } else {
+                loginRequest.setUsername(user.getUsername());
+            }
+        }
         Authentication authentication = authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
@@ -88,8 +111,17 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
+    @PostMapping(value = "/signup")
+    public ResponseEntity<?> registerUser(@RequestBody SignupRequest signUpRequest, BindingResult bindingResult) {
+        List<String> errors = new ArrayList<>();
+        ResourceBundleMessageSource resourceBundleMessageSource = new ResourceBundleMessageSource();
+        resourceBundleMessageSource.setBasename("messages");
+        signupValidator.validate(signUpRequest, bindingResult);
+        if (bindingResult.hasErrors()) {
+            bindingResult.getAllErrors().forEach(e -> errors.add(resourceBundleMessageSource.getMessage(e, Locale.US)));
+            return ResponseEntity.badRequest().body(new ErrorResponse("Form error.",errors));
+        }
+
         if (userRepository.existsByUsername(signUpRequest.getUsername())) {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
         }

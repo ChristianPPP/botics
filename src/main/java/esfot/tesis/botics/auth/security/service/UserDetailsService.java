@@ -9,5 +9,6 @@ public interface UserDetailsService extends UserDetailsManager {
     UserDetails loadUserByUsername(String username) throws UsernameNotFoundException;
     String updateResetPasswordToken(String token, String email);
     User getByResetPasswordToken(String token);
+    UserDetails loadUserByEmail(String email);
     void resetPassword(User user, String newPassword);
 }

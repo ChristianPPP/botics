@@ -4,8 +4,11 @@ import com.cloudinary.Cloudinary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.support.ReloadableResourceBundleMessageSource;
+import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.core.env.Environment;
 
 import java.util.HashMap;
@@ -31,6 +34,20 @@ public class BoticsApplication {
 		config.put("api_secret", environment.getProperty("com.cloudinary.api_secret"));
 		cloudinary = new Cloudinary(config);
 		return cloudinary;
+	}
+
+	@Bean(name="messageSource")
+	public ResourceBundleMessageSource bundleMessageSource() {
+		ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
+		messageSource.setBasename("messages");
+		return messageSource;
+	}
+
+	@Bean
+	public MessageSource messageSource() {
+		ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
+		messageSource.setBasename("/messages");
+		return messageSource;
 	}
 
 }

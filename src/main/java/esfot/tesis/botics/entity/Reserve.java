@@ -22,18 +22,18 @@ public class Reserve {
 
     @NotBlank
     @Size(max = 50)
-    @Column(name = "subject", length = 50, nullable = false)
-    private String subject;
+    @Column(name = "lab_name", length = 50, nullable = false)
+    private String labName;
 
     @NotBlank
-    @Column(name = "message", nullable = false)
-    private String message;
+    @Column(name = "description", nullable = false)
+    private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private User user;
 
-    public Reserve(String subject, String message) {
-        this.subject = subject;
-        this.message = message;
+    public Reserve(String labName, String description) {
+        this.labName = labName;
+        this.description = description;
     }
 }

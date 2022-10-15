@@ -11,9 +11,6 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import javax.persistence.*;
-import javax.validation.constraints.Email;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -33,19 +30,12 @@ public class User{
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private long id;
 
-    @NotBlank
-    @Size(max = 40)
     @Column(name = "user_name", nullable = false, unique = true)
     private String username;
 
-    @NotBlank
-    @Size(max = 50)
-    @Email
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @NotBlank
-    @Size(max = 120)
     @Column(name = "password", nullable = false)
     private String password;
     
@@ -55,12 +45,18 @@ public class User{
     @Column(name = "last_name")
     private String lastName;
 
+    @Column(name = "extension", nullable = false, columnDefinition = "int default 0")
+    private Integer extension;
+
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "avatar_id")
     private Avatar avatar;
 
     @Column(name = "reset_password_token")
     private String resetPasswordToken;
+
+    @Column(name = "ticket_response")
+    private String ticketResponse;
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(name = "user_roles",
