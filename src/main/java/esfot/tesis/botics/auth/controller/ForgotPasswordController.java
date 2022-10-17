@@ -1,6 +1,7 @@
 package esfot.tesis.botics.auth.controller;
 
 import esfot.tesis.botics.auth.entity.User;
+import esfot.tesis.botics.auth.payload.request.ForgotPasswordRequest;
 import esfot.tesis.botics.auth.payload.request.ResetPasswordRequest;
 import esfot.tesis.botics.auth.payload.response.ErrorResponse;
 import esfot.tesis.botics.auth.payload.response.MessageResponse;
@@ -12,6 +13,7 @@ import net.bytebuddy.utility.RandomString;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.validation.BindingResult;
@@ -27,7 +29,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-@Slf4j
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/auth/password")
@@ -44,12 +45,18 @@ public class ForgotPasswordController {
     @Autowired
     ResetPasswordValidator resetPasswordValidator;
 
-    @PostMapping("/forgot")
-    public ResponseEntity<?> forgotPassword(HttpServletRequest request, @RequestParam String email, BindingResult bindingResult) {
+    @PostMapping(value = "/forgot")
+    public ResponseEntity<?> forgotPassword(HttpServletRequest request, @Nullable @RequestPart("email") String email, BindingResult bindingResult) {
         List<String> errors = new ArrayList<>();
+        ForgotPasswordRequest forgotPasswordRequest = new ForgotPasswordRequest();
+        if (email == null) {
+            forgotPasswordRequest.setEmail("");
+        } else {
+            forgotPasswordRequest.setEmail(email);
+        }
+        forgotPasswordValidator.validate(forgotPasswordRequest, bindingResult);
         ResourceBundleMessageSource resourceBundleMessageSource = new ResourceBundleMessageSource();
         resourceBundleMessageSource.setBasename("messages");
-        forgotPasswordValidator.validate(email, bindingResult);
         if (bindingResult.hasErrors()) {
             bindingResult.getAllErrors().forEach(e -> errors.add(resourceBundleMessageSource.getMessage(e, Locale.US)));
             return ResponseEntity.badRequest().body(new ErrorResponse("Form error.",errors));
@@ -95,10 +102,15 @@ public class ForgotPasswordController {
     }
 
     @PostMapping("/reset")
-    public ResponseEntity<?> resetPassword(@RequestParam String password, @RequestParam String confirmPassword, @RequestParam("token") String token, BindingResult bindingResult) {
+    public ResponseEntity<?> resetPassword(@Nullable @RequestPart("password") String password, @Nullable @RequestPart("confirmPassword") String confirmPassword, @RequestParam("token") String token, BindingResult bindingResult) {
         ResetPasswordRequest resetPasswordRequest = new ResetPasswordRequest();
-        resetPasswordRequest.setPassword(password);
-        resetPasswordRequest.setConfirmPassword(confirmPassword);
+        if (password == null || confirmPassword == null) {
+            resetPasswordRequest.setPassword("");
+            resetPasswordRequest.setConfirmPassword("");
+        } else {
+            resetPasswordRequest.setPassword(password);
+            resetPasswordRequest.setConfirmPassword(confirmPassword);
+        }
         resetPasswordValidator.validate(resetPasswordRequest, bindingResult);
         List<String> errors = new ArrayList<>();
         ResourceBundleMessageSource resourceBundleMessageSource = new ResourceBundleMessageSource();

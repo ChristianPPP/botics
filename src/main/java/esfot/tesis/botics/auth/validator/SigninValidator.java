@@ -17,7 +17,6 @@ public class SigninValidator implements Validator {
     public void validate(Object target, Errors errors) {
         LoginRequest loginRequest = (LoginRequest) target; 
         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "username", "NotEmpty.username");
-        //ValidationUtils.rejectIfEmptyOrWhitespace(errors, "email", "NotEmpty.email");
         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "password", "NotEmpty.password");
     }
 }

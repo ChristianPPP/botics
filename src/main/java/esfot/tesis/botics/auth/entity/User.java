@@ -76,9 +76,10 @@ public class User{
     @OnDelete(action = OnDeleteAction.CASCADE)
     private List<Ticket> tickets = new ArrayList<>();
 
-    public User(String username, String email, String password) {
+    public User(String username, String email, String password, Integer extension) {
         this.username = username;
         this.email = email;
         this.password = password;
+        this.extension = extension;
     }
 }

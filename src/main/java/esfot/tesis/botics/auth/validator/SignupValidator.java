@@ -29,7 +29,7 @@ public class SignupValidator implements Validator {
         if (signupRequest.getUsername().length() < 3 || signupRequest.getUsername().length() > 20) {
             errors.rejectValue("username", "Size.signupRequest.username");
         }
-        if (!Pattern.compile(regexPasswordPattern, Pattern.CASE_INSENSITIVE).matcher(signupRequest.getPassword()).matches()) {
+        if (!Pattern.compile(regexPasswordPattern).matcher(signupRequest.getPassword()).matches()) {
             errors.rejectValue("password", "NotValid.password");
         }
     }
