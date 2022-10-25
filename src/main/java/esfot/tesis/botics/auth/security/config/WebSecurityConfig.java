@@ -64,9 +64,8 @@ public class WebSecurityConfig {
                 .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
                 .exceptionHandling().accessDeniedHandler(accessDeniedHandler()).and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
-                .authorizeRequests().antMatchers("/api/auth/**").permitAll()
-                .antMatchers("/api/test/**").permitAll()
-                .antMatchers("api/v1/profile/**").fullyAuthenticated()
+                .authorizeRequests().antMatchers("/api/auth/**", "/swagger-ui/**", "/docs/**", "/swagger-ui.html").permitAll()
+                .antMatchers("api/v1/profile/**", "api/v1/admin/**").fullyAuthenticated()
                 .anyRequest().authenticated();
         http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);

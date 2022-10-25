@@ -6,7 +6,6 @@ import esfot.tesis.botics.entity.Avatar;
 import esfot.tesis.botics.repository.AvatarRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;

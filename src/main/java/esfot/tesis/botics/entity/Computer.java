@@ -70,7 +70,6 @@ public class Computer {
     @Column(name = "observations")
     private String observations;
 
-
     @ManyToOne(fetch = FetchType.LAZY)
     private Lab lab;
 

@@ -7,6 +7,7 @@ import esfot.tesis.botics.entity.Ticket;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import net.minidev.json.annotate.JsonIgnore;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -47,6 +48,9 @@ public class User{
 
     @Column(name = "extension", nullable = false, columnDefinition = "int default 0")
     private Integer extension;
+
+    @Column(name = "state", columnDefinition = "boolean default true")
+    private boolean state;
 
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "avatar_id")

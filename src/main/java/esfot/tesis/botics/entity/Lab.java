@@ -31,7 +31,6 @@ public class Lab {
     @Column(name = "name", length = 20, nullable = false)
     private ELab name;
 
-    @NotBlank
     @ColumnDefault("1")
     @Column(name = "state", nullable = false)
     private boolean state;
