@@ -10,9 +10,17 @@ import esfot.tesis.botics.auth.payload.response.MessageResponse;
 import esfot.tesis.botics.auth.repository.RoleRepository;
 import esfot.tesis.botics.auth.repository.UserRepository;
 import esfot.tesis.botics.auth.validator.SignupValidator;
+import esfot.tesis.botics.entity.Computer;
+import esfot.tesis.botics.entity.Lab;
+import esfot.tesis.botics.entity.Software;
 import esfot.tesis.botics.entity.enums.ELab;
+import esfot.tesis.botics.payload.request.ComputerRequest;
+import esfot.tesis.botics.payload.request.SoftwareRequest;
+import esfot.tesis.botics.service.ComputerServiceImpl;
 import esfot.tesis.botics.service.LabServiceImpl;
+import esfot.tesis.botics.service.SoftwareServiceImpl;
 import esfot.tesis.botics.service.UserServiceImpl;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +33,7 @@ import java.util.*;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
+@Slf4j
 @RequestMapping("api/v1/admin")
 public class AdminController {
     @Autowired
@@ -45,21 +54,27 @@ public class AdminController {
     @Autowired
     LabServiceImpl labService;
 
+    @Autowired
+    SoftwareServiceImpl softwareService;
+
+    @Autowired
+    ComputerServiceImpl computerService;
+
     @GetMapping("/interns")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> index() {
+    public ResponseEntity<?> indexInterns() {
         return ResponseEntity.ok().body(userService.getAllInternUsers());
     }
 
     @GetMapping("/intern/{name}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> show(@PathVariable("name") String name) {
+    public ResponseEntity<?> showIntern(@PathVariable("name") String name) {
         return ResponseEntity.ok().body(userService.getInternUser(name));
     }
 
     @PostMapping("/intern/save")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> save(@RequestBody SignupRequest signUpRequest, BindingResult bindingResult) {
+    public ResponseEntity<?> saveIntern(@RequestBody SignupRequest signUpRequest, BindingResult bindingResult) {
         List<String> errors = new ArrayList<>();
         ResourceBundleMessageSource resourceBundleMessageSource = new ResourceBundleMessageSource();
         resourceBundleMessageSource.setBasename("messages");
@@ -101,7 +116,7 @@ public class AdminController {
     
     @GetMapping("/intern/disable/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> disable(@PathVariable("id") Long id) {
+    public ResponseEntity<?> disableIntern(@PathVariable("id") Long id) {
         User user = userService.getUserById(id);
         if (user == null) {
             return ResponseEntity.badRequest().body(new MessageResponse("Intern not found."));
@@ -113,7 +128,7 @@ public class AdminController {
 
     @GetMapping("/intern/enable/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> enable(@PathVariable("id") Long id) {
+    public ResponseEntity<?> enableIntern(@PathVariable("id") Long id) {
         User user = userService.getUserById(id);
         if (user == null) {
             return ResponseEntity.badRequest().body(new MessageResponse("Intern not found."));
@@ -152,4 +167,103 @@ public class AdminController {
         }
         return ResponseEntity.badRequest().body(new MessageResponse("Lab not found."));
     }
+
+    @PostMapping("/software/save/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> saveSoftware(@PathVariable("id") Long id, @RequestBody SoftwareRequest softwareRequest) {
+        Lab currentLab = labService.getLabById(id);
+        Software software = new Software(softwareRequest.getName(), softwareRequest.getVersion(), softwareRequest.getYear());
+        if (softwareService.getSoftwareByName(softwareRequest.getName()) != null) {
+            software = softwareService.getSoftwareByName(softwareRequest.getName());
+            software.setVersion(softwareRequest.getVersion());
+            software.setYear(softwareRequest.getYear());
+            softwareService.saveSoftware(software);
+        } else {
+            currentLab.getSoftwares().add(software);
+            labService.saveLab(currentLab);
+        }
+        return ResponseEntity.ok().body(new MessageResponse("Software list updated."));
+    }
+
+    @DeleteMapping("/software/delete/{idLab}/{idSoft}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteSoftware(@PathVariable("idLab") Long idLab, @PathVariable("idSoft") Long idSoft) {
+        Lab currentLab = labService.getLabById(idLab);
+        Software software = softwareService.getSoftware(idSoft);
+        currentLab.getSoftwares().remove(software);
+        labService.saveLab(currentLab);
+        return ResponseEntity.ok().body(new MessageResponse("Software deleted."));
+    }
+
+    @PostMapping("/computer/save")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> saveComputer(@RequestBody ComputerRequest computerRequest) {
+        Computer computer = new Computer(computerRequest.getHostName(), computerRequest.getSerialMonitor(),
+                computerRequest.getSerialKeyboard(), computerRequest.getSerialCpu(), computerRequest.getCodeCpu(),
+                computerRequest.getCodeMonitor(), computerRequest.getCodeKeyboard(), computerRequest.getState(),
+                computerRequest.getModel(), computerRequest.getHardDrive(), computerRequest.getRam(),
+                computerRequest.getProcessor(), computerRequest.getOperativeSystem(), computerRequest.getDetails(),
+                computerRequest.getObservations(), computerRequest.getLabReference());
+        if (computerService.getComputerByHostName(computerRequest.getHostName()) != null) {
+            computer = computerService.getComputerByHostName(computerRequest.getHostName());
+            computer.setSerialMonitor(computerRequest.getSerialMonitor());
+            computer.setSerialKeyboard(computerRequest.getSerialKeyboard());
+            computer.setCodeCpu(computerRequest.getCodeCpu());
+            computer.setCodeMonitor(computerRequest.getCodeMonitor());
+            computer.setCodeKeyboard(computerRequest.getCodeKeyboard());
+            computer.setState(computerRequest.getState());
+            computer.setModel(computerRequest.getModel());
+            computer.setHardDrive(computerRequest.getHardDrive());
+            computer.setRam(computerRequest.getRam());
+            computer.setProcessor(computerRequest.getProcessor());
+            computer.setOperativeSystem(computerRequest.getOperativeSystem());
+            computer.setDetails(computerRequest.getDetails());
+            computer.setObservations(computerRequest.getObservations());
+            computer.setLabReference(computerRequest.getLabReference());
+        }
+        computerService.saveComputer(computer);
+        return ResponseEntity.ok().body(new MessageResponse("Computer saved."));
+    }
+
+    @GetMapping("/computers")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> indexComputers() {
+        return ResponseEntity.ok().body(computerService.getAll());
+    }
+
+    @GetMapping("/computer/{hostName}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> showComputerByHostName(@PathVariable("hostName") String hostName) {
+        return ResponseEntity.ok().body(computerService.getComputerByHostName(hostName));
+    }
+
+    @DeleteMapping("/computer/delete/{hostName}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteComputer(@PathVariable("hostName") String hostName) {
+        computerService.deleteComputer(computerService.getComputerByHostName(hostName));
+        return ResponseEntity.ok().body(new MessageResponse("Computer deleted."));
+    }
+
+    @PutMapping("/computer/assign/{idLab}/{idComputer}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> assignComputerToLab(@PathVariable("idLab") Long idLab, @PathVariable("idComputer") Long idComputer) {
+        Lab currentLab = labService.getLabById(idLab);
+        Computer computer = computerService.getComputerByID(idComputer);
+        computer.setLabReference(idLab);
+        computerService.saveComputer(computer);
+        computerService.assignComputerToLab(idLab, idComputer);
+        return ResponseEntity.ok().body(new MessageResponse("Computer "+computer.getHostName()+" assigned to lab "+currentLab.getName()+"."));
+    }
+
+    @PutMapping("/computer/unassign/{idLab}/{idComputer}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> unassignComputerFromLab(@PathVariable("idLab") Long idLab, @PathVariable("idComputer") Long idComputer) {
+        Lab currentLab = labService.getLabById(idLab);
+        Computer computer = computerService.getComputerByID(idComputer);
+        computer.setLabReference(0L);
+        computer.setLab(null);
+        computerService.saveComputer(computer);
+        return ResponseEntity.ok().body(new MessageResponse("Computer "+computer.getHostName()+" unassigned from lab "+currentLab.getName()+"."));
+    }
+
 }

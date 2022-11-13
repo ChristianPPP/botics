@@ -8,5 +8,6 @@ import java.util.List;
 public interface LabService {
     List<Lab> getAll();
     Lab getLabByName(ELab name);
-
+    Lab getLabById(Long id);
+    void saveLab(Lab lab);
 }

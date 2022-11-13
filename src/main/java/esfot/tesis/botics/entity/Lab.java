@@ -1,6 +1,7 @@
 package esfot.tesis.botics.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import esfot.tesis.botics.entity.enums.ELab;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,10 +11,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import javax.persistence.*;
-import javax.validation.constraints.NotBlank;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -44,9 +42,10 @@ public class Lab {
             inverseJoinColumns = @JoinColumn(name = "software_id"))
     private Set<Software> softwares = new HashSet<>();
 
+    @JsonManagedReference
     @OneToMany(mappedBy = "lab", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private List<Computer> computers = new ArrayList<>();
+    private Set<Computer> computers = new HashSet<>();
 
     public Lab(ELab name, boolean state, String image) {
         this.name = name;

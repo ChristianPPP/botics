@@ -22,4 +22,14 @@ public class LabServiceImpl implements LabService{
     public Lab getLabByName(ELab name) {
         return labRepository.findByName(name);
     }
+
+    @Override
+    public Lab getLabById(Long id) {
+        return labRepository.getReferenceById(id);
+    }
+
+    @Override
+    public void saveLab(Lab lab) {
+        labRepository.save(lab);
+    }
 }

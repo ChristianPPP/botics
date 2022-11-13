@@ -1,6 +1,7 @@
 package esfot.tesis.botics.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -15,7 +16,9 @@ import javax.validation.constraints.Size;
 @Setter
 @NoArgsConstructor
 @Table(name = "computers",
-        uniqueConstraints = @UniqueConstraint(columnNames = "host_name"))
+        uniqueConstraints = {@UniqueConstraint(columnNames = "host_name"),
+                @UniqueConstraint(columnNames = "serial_cpu"),
+                @UniqueConstraint(columnNames = "serial_monitor")})
 public class Computer {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
@@ -70,16 +73,25 @@ public class Computer {
     @Column(name = "observations")
     private String observations;
 
+    @Column(name = "lab_reference", nullable = false, columnDefinition = "int default 0")
+    private Long labReference;
+
+    @JsonBackReference
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "lab_id")
     private Lab lab;
 
-    public Computer(String hostName, String serialMonitor, String serialKeyboard, String serialCpu,
+    public Computer(String hostName, String serialMonitor, String serialKeyboard, String serialCpu, String codeCpu,
+                    String codeMonitor, String codeKeyboard,
                     String state, String model, String hardDrive, String ram, String processor, String operativeSystem,
-                    String details, String observations) {
+                    String details, String observations, Long labReference) {
         this.hostName = hostName;
         this.serialMonitor = serialMonitor;
         this.serialKeyboard = serialKeyboard;
         this.serialCpu = serialCpu;
+        this.codeCpu = codeCpu;
+        this.codeMonitor = codeMonitor;
+        this.codeKeyboard = codeKeyboard;
         this.state = state;
         this.model = model;
         this.hardDrive = hardDrive;
@@ -88,5 +100,6 @@ public class Computer {
         this.operativeSystem = operativeSystem;
         this.details = details;
         this.observations = observations;
+        this.labReference = labReference;
     }
 }

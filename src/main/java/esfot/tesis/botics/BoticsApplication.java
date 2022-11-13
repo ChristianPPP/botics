@@ -59,7 +59,7 @@ public class BoticsApplication {
 
 	@Bean
 	public OpenAPI customOpenAPI() {
-		return new OpenAPI().addServersItem(new Server().url("https://botics.loca.lt"))
+		return new OpenAPI().addServersItem(new Server().url("https://botics.loca.lt")).addServersItem(new Server().url("http://localhost:8080"))
 				.components(new Components().addSecuritySchemes("Access Token",
 						new SecurityScheme().type(SecurityScheme.Type.APIKEY)
 								.in(SecurityScheme.In.HEADER).bearerFormat("jwt").name("Authorization")))
