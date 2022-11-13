@@ -43,10 +43,5 @@ public class ComputerServiceImpl implements ComputerService{
     public void assignComputerToLab(Long idLab, Long idComputer) {
         computerRepository.assignLab(idLab, idComputer);
     }
-
-    @Override
-    public void unassignComputerFromLab(Long idComputer) {
-        computerRepository.unassignLab(idComputer);
-    }
 }
 

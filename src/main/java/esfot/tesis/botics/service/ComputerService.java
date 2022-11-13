@@ -11,5 +11,4 @@ public interface ComputerService {
     void deleteComputer(Computer computer);
     Computer getComputerByID(Long id);
     void assignComputerToLab(Long idLab, Long idComputer);
-    void unassignComputerFromLab(Long idComputer);
 }

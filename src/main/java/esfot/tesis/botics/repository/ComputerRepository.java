@@ -14,7 +14,4 @@ public interface ComputerRepository extends JpaRepository<Computer, Long> {
     @Query(value = "UPDATE computers SET lab_id = ?1 WHERE id = ?2", nativeQuery = true)
     void assignLab(Long idLab, Long idComputer);
 
-    @Modifying
-    @Query(value = "UPDATE computers SET lab_id = 0 WHERE id = ?1", nativeQuery = true)
-    void unassignLab(Long idComputer);
 }
