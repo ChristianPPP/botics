@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+        name="viewport">
+  <meta content="ie=edge" http-equiv="X-UA-Compatible">
+  <title>Reporte de inventarios - Botics</title>
+  <style>
+    body {
+      font-family: "lato", sans-serif;
+    }
+
+    .container {
+      max-width: 700px;
+      margin-left: 0px;
+      margin-right: 0px;
+      padding-left: 0px;
+      padding-right: 0px;
+    }
+
+    thead th {
+      color: white;
+      background-color: #2a506d;
+      border-style: solid;
+      border-color: black;
+      border-width: 1px;
+      box-shadow: 0px 0px 9px 0px rgba(0, 0, 0, 0.1);
+    }
+
+    tbody th{
+      border-style: solid;
+      border-color: black;
+      border-width: 1px;
+      box-shadow: 0px 0px 9px 0px rgba(0, 0, 0, 0.1);
+      color: black;
+    }
+
+    h2 {
+      font-size: 26px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    h2 small {
+      font-size: 0.5em;
+    }
+
+    .responsive-table li {
+      border-radius: 3px;
+      padding: 25px 30px;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 25px;
+    }
+
+    thead tr {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    tbody tr {
+      background-color: #ffffff;
+      box-shadow: 0px 0px 9px 0px rgba(0, 0, 0, 0.1);
+    }
+
+    .responsive-table .table-row {
+      background-color: #ffffff;
+      box-shadow: 0px 0px 9px 0px rgba(0, 0, 0, 0.1);
+    }
+    .responsive-table .col-1 {
+      text-align: center;
+      flex-basis: 40%;
+    }
+    .responsive-table .col-2 {
+      text-align: center;
+      flex-basis: 25%;
+    }
+    .responsive-table .col-3 {
+      text-align: center;
+      flex-basis: 40%;
+    }
+    .responsive-table .col-4 {
+      text-align: center;
+      flex-basis: 15%;
+    }
+    .responsive-table .col-5 {
+      text-align: center;
+      flex-basis: 30%;
+    }
+    .responsive-table .col-6 {
+      text-align: center;
+      flex-basis: 25%;
+    }
+    .responsive-table .col-7 {
+      text-align: center;
+      flex-basis: 35%;
+    }
+    .responsive-table .col-8 {
+      text-align: center;
+      flex-basis: 30%;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div th:if="${labs.empty}">No existe registro de laboratorios.</div>
+  <div th:each="lab : ${labs}">
+    <h2 th:text="${lab.name}"></h2>
+    <table class="responsive-table">
+      <thead th:unless="${lab.computers.empty}">
+      <tr>
+        <th>Hostname</th>
+        <th>Modelo</th>
+        <th>Procesador</th>
+        <th>RAM</th>
+        <th>Disco Duro</th>
+        <th>CB CPU</th>
+        <th>CB Monitor</th>
+        <th>CB Teclado</th>
+      </tr>
+      </thead>
+      <tbody th:if="${lab.computers.empty}">No existen computadoras asignadas.</tbody>
+      <tbody th:unless="${lab.computers.empty}">
+      <tr th:each="computer : ${lab.computers}">
+        <th data-label="Hostname" th:text="${computer.hostName}"></th>
+        <th data-label="Modelo" th:text="${computer.model}"></th>
+        <th data-label="Procesador" th:text="${computer.processor}"></th>
+        <th data-label="RAM" th:text="${computer.ram}"></th>
+        <th data-label="Disco Duro" th:text="${computer.hardDrive}"></th>
+        <th data-label="Codigo de bien CPU" th:text="${computer.CodeCpu}"></th>
+        <th data-label="Codigo de bien Monitor" th:text="${computer.CodeMonitor}"></th>
+        <th data-label="Codigo de bien Teclado" th:text="${computer.CodeKeyboard}"></th>
+      </tr>
+      </tbody>
+    </table>
+    <br>
+    <br>
+    <br>
+  </div>
+</div>
+</body>
+</html>

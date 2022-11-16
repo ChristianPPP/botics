@@ -42,6 +42,7 @@ public class Lab {
             inverseJoinColumns = @JoinColumn(name = "software_id"))
     private Set<Software> softwares = new HashSet<>();
 
+    //Muchos a muchos - historial
     @JsonManagedReference
     @OneToMany(mappedBy = "lab", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OnDelete(action = OnDeleteAction.CASCADE)

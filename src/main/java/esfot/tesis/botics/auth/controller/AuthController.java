@@ -105,7 +105,7 @@ public class AuthController {
                     .body(new UserInfoResponse(userDetails.getId(),
                             userDetails.getUsername(),
                             userDetails.getEmail(),
-                            roles));
+                            roles, jwtCookie.toString()));
         } else {
             return ResponseEntity.badRequest().body(new MessageResponse("User already autenticated."));
         }

@@ -1,6 +1,8 @@
 package esfot.tesis.botics.controller;
 
 
+import com.itextpdf.html2pdf.ConverterProperties;
+import com.itextpdf.html2pdf.HtmlConverter;
 import esfot.tesis.botics.auth.entity.Role;
 import esfot.tesis.botics.auth.entity.User;
 import esfot.tesis.botics.auth.entity.enums.ERole;
@@ -20,20 +22,25 @@ import esfot.tesis.botics.service.ComputerServiceImpl;
 import esfot.tesis.botics.service.LabServiceImpl;
 import esfot.tesis.botics.service.SoftwareServiceImpl;
 import esfot.tesis.botics.service.UserServiceImpl;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.ResourceBundleMessageSource;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.WebContext;
 
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayOutputStream;
 import java.util.*;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
-@Slf4j
 @RequestMapping("api/v1/admin")
 public class AdminController {
     @Autowired
@@ -41,6 +48,7 @@ public class AdminController {
 
     @Autowired
     SignupValidator signupValidator;
+
 
     @Autowired
     UserRepository userRepository;
@@ -59,6 +67,15 @@ public class AdminController {
 
     @Autowired
     ComputerServiceImpl computerService;
+
+    @Autowired
+    ServletContext servletContext;
+
+    private final TemplateEngine templateEngine;
+
+    public AdminController(TemplateEngine templateEngine){
+        this.templateEngine = templateEngine;
+    }
 
     @GetMapping("/interns")
     @PreAuthorize("hasRole('ADMIN')")
@@ -266,4 +283,17 @@ public class AdminController {
         return ResponseEntity.ok().body(new MessageResponse("Computer "+computer.getHostName()+" unassigned from lab "+currentLab.getName()+"."));
     }
 
+    @GetMapping("/inventory/report/pdf")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> generatePdfReport(HttpServletRequest request, HttpServletResponse response) {
+        WebContext context = new WebContext(request, response, servletContext);
+        context.setVariable("labs", labService.getAll());
+        String ireport = templateEngine.process("ireport", context);
+        ByteArrayOutputStream target = new ByteArrayOutputStream();
+        ConverterProperties converterProperties = new ConverterProperties();
+        converterProperties.setBaseUri("https://botics.loca.lt");
+        HtmlConverter.convertToPdf(ireport, target, converterProperties);
+        byte[] bytes = target.toByteArray();
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(bytes);
+    }
 }

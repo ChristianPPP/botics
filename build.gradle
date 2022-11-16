@@ -36,6 +36,7 @@ dependencies {
 	implementation 'org.springdoc:springdoc-openapi-javadoc:1.6.12'
 	implementation 'com.itextpdf:kernel:7.2.3'
 	implementation 'com.itextpdf:html2pdf:4.0.3'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf:2.7.5'
 	annotationProcessor 'com.github.therapi:therapi-runtime-javadoc-scribe:0.13.0'
 	implementation 'com.github.therapi:therapi-runtime-javadoc:0.13.0'
 	compileOnly 'org.projectlombok:lombok'
