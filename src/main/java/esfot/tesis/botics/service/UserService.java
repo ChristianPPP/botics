@@ -9,5 +9,5 @@ public interface UserService {
     User getUserById(Long id);
     List<User> getAllInternUsers();
     User getInternUser(String firstName);
-
+    User getUserByUserId(Long userId);
 }

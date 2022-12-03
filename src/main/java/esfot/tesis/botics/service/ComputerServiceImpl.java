@@ -40,8 +40,8 @@ public class ComputerServiceImpl implements ComputerService{
     }
 
     @Override
-    public void assignComputerToLab(Long idLab, Long idComputer) {
-        computerRepository.assignLab(idLab, idComputer);
+    public List<Computer> getAllByLabReference(Long labReference) {
+        return computerRepository.getComputersByLabReference(labReference);
     }
 }
 

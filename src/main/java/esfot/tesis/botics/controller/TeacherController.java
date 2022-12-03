@@ -1,16 +1,16 @@
 package esfot.tesis.botics.controller;
 
+
 import esfot.tesis.botics.auth.entity.User;
 import esfot.tesis.botics.auth.payload.response.MessageResponse;
-import esfot.tesis.botics.auth.repository.UserRepository;
-import esfot.tesis.botics.entity.Response;
+import esfot.tesis.botics.entity.Commentary;
+import esfot.tesis.botics.entity.Reserve;
 import esfot.tesis.botics.entity.Ticket;
 import esfot.tesis.botics.payload.request.CommentaryRequest;
-import esfot.tesis.botics.payload.request.ResponseRequest;
+import esfot.tesis.botics.payload.request.ReserveRequest;
 import esfot.tesis.botics.payload.request.TicketRequest;
 import esfot.tesis.botics.service.CommentaryServiceImpl;
-import esfot.tesis.botics.entity.Commentary;
-import esfot.tesis.botics.service.ResponseServiceImpl;
+import esfot.tesis.botics.service.ReserveServiceImpl;
 import esfot.tesis.botics.service.TicketServiceImpl;
 import esfot.tesis.botics.service.UserServiceImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -21,31 +21,27 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
 @Slf4j
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
-@RequestMapping("api/v1/administrative")
-public class AdministrativeController {
+@RequestMapping("api/v1/teacher")
+public class TeacherController {
     @Autowired
-    CommentaryServiceImpl commentariesService;
+    UserServiceImpl userService;
+
+    @Autowired
+    CommentaryServiceImpl commentaryService;
 
     @Autowired
     TicketServiceImpl ticketService;
 
     @Autowired
-    UserServiceImpl userService;
-
-    @Autowired
-    ResponseServiceImpl responseService;
-
-    @Autowired
-    UserRepository userRepository;
+    ReserveServiceImpl reserveService;
 
     @GetMapping("/commentaries/{idUser}")
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PROFESOR')")
     public ResponseEntity<?> indexCommentariesByIdUser(@PathVariable("idUser") Long idUser) {
-        List<Commentary> commentaries = commentariesService.getCommentariesByUserId(idUser);
+        List<Commentary> commentaries = commentaryService.getCommentariesByUserId(idUser);
         if (commentaries.isEmpty()) {
             return ResponseEntity.ok().body(new MessageResponse("No existen comentarios registrados."));
         }else {
@@ -54,19 +50,19 @@ public class AdministrativeController {
     }
 
     @PostMapping("/commentary/{idUser}")
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PROFESOR')")
     public ResponseEntity<?> storeCommentary(@RequestBody CommentaryRequest commentaryRequest, @PathVariable("idUser") Long idUser) {
         User currentUser = userService.getUserByUserId(idUser);
         Commentary commentary = new Commentary();
         commentary.setUser(currentUser);
         commentary.setSubject(commentaryRequest.getSubject());
         commentary.setMessage(commentaryRequest.getMessage());
-        commentariesService.storeCommentary(commentary);
+        commentaryService.storeCommentary(commentary);
         return ResponseEntity.ok().body(new MessageResponse("Comentario guardado correctamente."));
     }
 
     @GetMapping("/tickets/{idUser}")
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PROFESOR')")
     public ResponseEntity<?> indexTicketsByIdUser(@PathVariable("idUser") Long idUser) {
         List<Ticket> tickets = ticketService.getTicketsByUserId(idUser);
         if (tickets.isEmpty()) {
@@ -77,7 +73,7 @@ public class AdministrativeController {
     }
 
     @PostMapping("/ticket/{idUser}")
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PROFESOR')")
     public ResponseEntity<?> storeTicket(@RequestBody TicketRequest ticketRequest, @PathVariable("idUser") Long idUser) {
         User currentUser = userService.getUserByUserId(idUser);
         Ticket ticket = new Ticket();
@@ -88,29 +84,26 @@ public class AdministrativeController {
         return ResponseEntity.ok().body(new MessageResponse("Ticket guardado correctamente."));
     }
 
-    @GetMapping("/manage/commentaries/{idUser}")
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public ResponseEntity<?> indexCommentariesByNotId(@PathVariable("idUser") Long idUser) {
-        List<Commentary> commentaries = commentariesService.getCommentariesByNotUserId(idUser);
-        return ResponseEntity.ok().body(commentaries);
+    @GetMapping("/reserve/{idUser}")
+    @PreAuthorize("hasRole('PROFESOR')")
+    public ResponseEntity<?> indexReservesByIdUser(@PathVariable("idUser") Long idUser) {
+        List<Reserve> reserves = reserveService.getReservesByUserId(idUser);
+        if (reserves.isEmpty()) {
+            return ResponseEntity.ok().body(new MessageResponse("No existen reservas registradas."));
+        }else {
+            return ResponseEntity.ok().body(reserves);
+        }
     }
 
-    @PostMapping("/manage/commentaries/response/{idUser}/{idCommentary}")
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public ResponseEntity<?> responseCommentary(@PathVariable("idUser") Long idUser, @PathVariable("idCommentary") Long idCommentary, @RequestBody ResponseRequest responseRequest) {
-        Commentary commentary = commentariesService.getCommentaryById(idCommentary);
-        User user = userService.getUserByUserId(idUser);
-        Response response = new Response();
-        response.setDetails(responseRequest.getDetails());
-        response.setSubject(responseRequest.getSubject());
-        response.setUser(user);
-        responseService.storeResponse(response);
-        user.getResponse().add(response);
-        userRepository.save(user);
-        commentary.setResponse(response);
-        commentary.setState(true);
-        commentariesService.storeCommentary(commentary);
-        return ResponseEntity.ok().body(new MessageResponse("Comentario atendido con éxito."));
+    @PostMapping("/reserve/{idUser}")
+    @PreAuthorize("hasRole('PROFESOR')")
+    public ResponseEntity<?> storeReserve(@RequestBody ReserveRequest reserveRequest, @PathVariable("idUser") Long idUser) {
+        User currentUser = userService.getUserByUserId(idUser);
+        Reserve reserve = new Reserve();
+        reserve.setUser(currentUser);
+        reserve.setLabName(reserveRequest.getLabName());
+        reserve.setDescription(reserveRequest.getDescription());
+        reserveService.storeReserve(reserve);
+        return ResponseEntity.ok().body(new MessageResponse("Reserva guardada correctamente."));
     }
-
 }

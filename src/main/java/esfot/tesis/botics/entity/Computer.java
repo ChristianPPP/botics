@@ -1,7 +1,5 @@
 package esfot.tesis.botics.entity;
 
-
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -75,11 +73,6 @@ public class Computer {
 
     @Column(name = "lab_reference", nullable = false, columnDefinition = "int default 0")
     private Long labReference;
-
-    @JsonBackReference
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lab_id")
-    private Lab lab;
 
     public Computer(String hostName, String serialMonitor, String serialKeyboard, String serialCpu, String codeCpu,
                     String codeMonitor, String codeKeyboard,

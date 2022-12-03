@@ -6,11 +6,10 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface ComputerRepository extends JpaRepository<Computer, Long> {
     Computer getComputerByHostName(String hostName);
-
-    @Modifying
-    @Query(value = "UPDATE computers SET lab_id = ?1 WHERE id = ?2", nativeQuery = true)
-    void assignLab(Long idLab, Long idComputer);
+    List<Computer> getComputersByLabReference(Long labReference);
 }

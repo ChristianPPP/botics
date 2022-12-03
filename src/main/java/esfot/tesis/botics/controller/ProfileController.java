@@ -89,11 +89,4 @@ public class ProfileController {
         userService.save(user);
         return ResponseEntity.ok().body(new MessageResponse("Profile updated successfully."));
     }
-
-    @DeleteMapping("/delete")
-    public ResponseEntity<?> delete(Authentication authentication) {
-        User user = userServiceImpl.getUser(authentication.getName());
-        userService.delete(user);
-        return ResponseEntity.ok().body(new MessageResponse(("User account deleted successfully")));
-    }
 }

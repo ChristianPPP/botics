@@ -1,15 +1,12 @@
 package esfot.tesis.botics.entity;
 
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import esfot.tesis.botics.entity.enums.ELab;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
-
 import javax.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -42,10 +39,11 @@ public class Lab {
             inverseJoinColumns = @JoinColumn(name = "software_id"))
     private Set<Software> softwares = new HashSet<>();
 
-    //Muchos a muchos - historial
-    @JsonManagedReference
-    @OneToMany(mappedBy = "lab", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @OnDelete(action = OnDeleteAction.CASCADE)
+    @JsonIgnore
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(name = "lab_computers",
+            joinColumns = @JoinColumn(name = "lab_id"),
+            inverseJoinColumns = @JoinColumn(name = "computer_id"))
     private Set<Computer> computers = new HashSet<>();
 
     public Lab(ELab name, boolean state, String image) {

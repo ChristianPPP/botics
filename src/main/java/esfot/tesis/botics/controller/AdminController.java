@@ -1,6 +1,5 @@
 package esfot.tesis.botics.controller;
 
-
 import com.itextpdf.html2pdf.ConverterProperties;
 import com.itextpdf.html2pdf.HtmlConverter;
 import esfot.tesis.botics.auth.entity.Role;
@@ -13,15 +12,14 @@ import esfot.tesis.botics.auth.repository.RoleRepository;
 import esfot.tesis.botics.auth.repository.UserRepository;
 import esfot.tesis.botics.auth.validator.SignupValidator;
 import esfot.tesis.botics.entity.Computer;
+import esfot.tesis.botics.entity.History;
 import esfot.tesis.botics.entity.Lab;
 import esfot.tesis.botics.entity.Software;
 import esfot.tesis.botics.entity.enums.ELab;
 import esfot.tesis.botics.payload.request.ComputerRequest;
 import esfot.tesis.botics.payload.request.SoftwareRequest;
-import esfot.tesis.botics.service.ComputerServiceImpl;
-import esfot.tesis.botics.service.LabServiceImpl;
-import esfot.tesis.botics.service.SoftwareServiceImpl;
-import esfot.tesis.botics.service.UserServiceImpl;
+import esfot.tesis.botics.service.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.http.MediaType;
@@ -39,6 +37,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.util.*;
 
+@Slf4j
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("api/v1/admin")
@@ -48,7 +47,6 @@ public class AdminController {
 
     @Autowired
     SignupValidator signupValidator;
-
 
     @Autowired
     UserRepository userRepository;
@@ -70,6 +68,9 @@ public class AdminController {
 
     @Autowired
     ServletContext servletContext;
+
+    @Autowired
+    HistoryServiceImpl historyService;
 
     private final TemplateEngine templateEngine;
 
@@ -109,7 +110,6 @@ public class AdminController {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
         }
 
-        // Create new user's account
         User user = new User(signUpRequest.getUsername(),
                 signUpRequest.getEmail(),
                 encoder.encode(signUpRequest.getPassword()), 0);
@@ -248,6 +248,12 @@ public class AdminController {
         return ResponseEntity.ok().body(computerService.getAll());
     }
 
+    @GetMapping("/computer/{idComputer}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> indexComputerByLab(@PathVariable("idComputer") Long idComputer) {
+        return ResponseEntity.ok().body(computerService.getComputerByID(idComputer));
+    }
+
     @GetMapping("/computer/{hostName}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> showComputerByHostName(@PathVariable("hostName") String hostName) {
@@ -266,21 +272,64 @@ public class AdminController {
     public ResponseEntity<?> assignComputerToLab(@PathVariable("idLab") Long idLab, @PathVariable("idComputer") Long idComputer) {
         Lab currentLab = labService.getLabById(idLab);
         Computer computer = computerService.getComputerByID(idComputer);
-        computer.setLabReference(idLab);
-        computerService.saveComputer(computer);
-        computerService.assignComputerToLab(idLab, idComputer);
-        return ResponseEntity.ok().body(new MessageResponse("Computer "+computer.getHostName()+" assigned to lab "+currentLab.getName()+"."));
+        boolean state = false;
+        History history = historyService.getActualAssigment(idComputer);
+        Lab lab = null;
+        if (!(history == null)) {
+            state =true;
+            lab = labService.getLabById(history.getLabReference());
+        }
+        if (state) {
+            assert lab != null;
+            return ResponseEntity.badRequest().body(new MessageResponse("La computadora "+computer.getHostName()+" ya se encuentra asignada al laboratorio "+lab.getName()+"."));
+        }else {
+            computer.setLabReference(idLab);
+            computerService.saveComputer(computer);
+            currentLab.getComputers().add(computer);
+            labService.saveLab(currentLab);
+            history = new History(true, idLab, idComputer);
+            historyService.saveHistory(history);
+            return ResponseEntity.ok().body(new MessageResponse("Computadora "+computer.getHostName()+" asignada al laboratorio "+currentLab.getName()+"."));
+        }
     }
 
     @PutMapping("/computer/unassign/{idLab}/{idComputer}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> unassignComputerFromLab(@PathVariable("idLab") Long idLab, @PathVariable("idComputer") Long idComputer) {
+    public ResponseEntity<?> unassignComputerFromLab(@PathVariable("idLab") Long idLab, @PathVariable("idComputer") Long idComputer, @RequestParam(name = "changeDetails") String changeDetails) {
         Lab currentLab = labService.getLabById(idLab);
         Computer computer = computerService.getComputerByID(idComputer);
-        computer.setLabReference(0L);
-        computer.setLab(null);
-        computerService.saveComputer(computer);
-        return ResponseEntity.ok().body(new MessageResponse("Computer "+computer.getHostName()+" unassigned from lab "+currentLab.getName()+"."));
+        boolean state = false;
+        History history = historyService.getActualAssigment(idComputer);
+        if (!(history == null)) {
+            state = true;
+        }
+        if (!state) {
+            return ResponseEntity.badRequest().body(new MessageResponse("La computadora "+computer.getHostName()+" no se encuentra asignada a un laboratorio."));
+        }else {
+            computer.setLabReference(0L);
+            computerService.saveComputer(computer);
+            history.setState(false);
+            history.setChangeDetails(changeDetails);
+            historyService.saveHistory(history);
+            return ResponseEntity.ok().body(new MessageResponse("Computadora "+computer.getHostName()+" desasignada del laboratorio "+currentLab.getName()+"."));
+        }
+    }
+
+    @PutMapping("/computer/reassign/{idLab1}/{idLab2}/{idComputer}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> reassignComputerFromLabToLab(@PathVariable("idLab1") Long idLab1, @PathVariable("idLab2") Long idLab2, @PathVariable("idComputer") Long idComputer, @RequestParam(value = "changeDetails") String changeDetails) {
+        Lab lab1 = labService.getLabById(idLab1);
+        Lab lab2 = labService.getLabById(idLab2);
+        Computer computer = computerService.getComputerByID(idComputer);
+        this.unassignComputerFromLab(idLab1, idComputer, changeDetails);
+        this.assignComputerToLab(idLab2, idComputer);
+        return ResponseEntity.ok().body(new MessageResponse("Computadora "+computer.getHostName()+" reasignada del laboratorio "+lab1.getName()+" al laboratorio "+lab2.getName()+"."));
+    }
+
+    @GetMapping("/computers/{idLab}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> indexComputerByIdLab(@PathVariable("idLab") Long idLab) {
+        return ResponseEntity.ok().body(computerService.getAllByLabReference(idLab));
     }
 
     @GetMapping("/inventory/report/pdf")

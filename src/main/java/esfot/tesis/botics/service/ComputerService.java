@@ -10,5 +10,5 @@ public interface ComputerService {
     void saveComputer(Computer computer);
     void deleteComputer(Computer computer);
     Computer getComputerByID(Long id);
-    void assignComputerToLab(Long idLab, Long idComputer);
+    List<Computer> getAllByLabReference(Long labReference);
 }

@@ -1,13 +1,10 @@
 package esfot.tesis.botics.auth.entity;
 
-import esfot.tesis.botics.entity.Avatar;
-import esfot.tesis.botics.entity.Comment;
-import esfot.tesis.botics.entity.Reserve;
-import esfot.tesis.botics.entity.Ticket;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import esfot.tesis.botics.entity.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import net.minidev.json.annotate.JsonIgnore;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -49,8 +46,8 @@ public class User{
     @Column(name = "extension", nullable = false, columnDefinition = "int default 0")
     private Integer extension;
 
-    @Column(name = "state", columnDefinition = "boolean default true")
-    private boolean state;
+    @Column(name = "state", columnDefinition = "int default 1")
+    private boolean state = true;
 
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "avatar_id")
@@ -59,26 +56,31 @@ public class User{
     @Column(name = "reset_password_token")
     private String resetPasswordToken;
 
-    @Column(name = "ticket_response")
-    private String ticketResponse;
-
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles = new HashSet<>();
 
+    @JsonManagedReference
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private List<Comment> comments = new ArrayList<>();
+    private List<Commentary> commentaries = new ArrayList<>();
 
+    @JsonManagedReference
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private List<Reserve> reserves = new ArrayList<>();
 
+    @JsonManagedReference
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private List<Ticket> tickets = new ArrayList<>();
+
+    @JsonManagedReference
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private List<Response> response = new ArrayList<>();
 
     public User(String username, String email, String password, Integer extension) {
         this.username = username;

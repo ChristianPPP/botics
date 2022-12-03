@@ -1,7 +1,6 @@
 package esfot.tesis.botics.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import esfot.tesis.botics.auth.entity.User;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,8 +12,8 @@ import javax.persistence.*;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "tickets")
-public class Ticket {
+@Table(name = "responses")
+public class Response {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private long id;
@@ -22,23 +21,22 @@ public class Ticket {
     @Column(name = "subject", length = 50, nullable = false)
     private String subject;
 
-    @Column(name = "description", nullable = false)
-    private String description;
-
-    @Column(name = "state")
-    private boolean state;
+    @Column(name = "details", nullable = false)
+    private String details;
 
     @JsonBackReference
     @ManyToOne(fetch = FetchType.LAZY)
     private User user;
 
-    @JsonManagedReference
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "response_id", referencedColumnName = "id")
-    private Response response;
+    @JsonBackReference
+    @OneToOne(mappedBy = "response")
+    private Commentary commentary;
 
-    public Ticket(String subject, String description) {
-        this.subject = subject;
-        this.description = description;
-    }
+    @JsonBackReference
+    @OneToOne(mappedBy = "response")
+    private Ticket ticket;
+
+    @JsonBackReference
+    @OneToOne(mappedBy = "response")
+    private Reserve reserve;
 }
