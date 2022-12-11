@@ -73,7 +73,7 @@ public class AuthController {
         signinValidator.validate(loginRequest, bindingResult);
         if (bindingResult.hasErrors()) {
             bindingResult.getAllErrors().forEach(e -> errors.add(resourceBundleMessageSource.getMessage(e, Locale.US)));
-            return ResponseEntity.badRequest().body(new ErrorResponse("Form error.",errors));
+            return ResponseEntity.badRequest().body(new ErrorResponse("Error en el formulario.",errors));
         }
         if (loginRequest.getUsername().contains("@")) {
             User user = userRepository.findByEmail(loginRequest.getUsername());

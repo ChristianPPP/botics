@@ -11,4 +11,6 @@ public interface ComputerService {
     void deleteComputer(Computer computer);
     Computer getComputerByID(Long id);
     List<Computer> getAllByLabReference(Long labReference);
+    Computer getComputerBySerialCpu(String serialCpu);
+    Computer getComputerBySerialMonitor(String serialMonitor);
 }

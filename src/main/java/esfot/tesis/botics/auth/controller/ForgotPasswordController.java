@@ -8,12 +8,10 @@ import esfot.tesis.botics.auth.payload.response.MessageResponse;
 import esfot.tesis.botics.auth.security.service.UserDetailsServiceImpl;
 import esfot.tesis.botics.auth.validator.ForgotPasswordValidator;
 import esfot.tesis.botics.auth.validator.ResetPasswordValidator;
-import lombok.extern.slf4j.Slf4j;
 import net.bytebuddy.utility.RandomString;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.http.ResponseEntity;
-import org.springframework.lang.Nullable;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.validation.BindingResult;
@@ -46,20 +44,19 @@ public class ForgotPasswordController {
     ResetPasswordValidator resetPasswordValidator;
 
     @PostMapping(value = "/forgot")
-    public ResponseEntity<?> forgotPassword(HttpServletRequest request, @Nullable @RequestPart("email") String email, BindingResult bindingResult) {
+    public ResponseEntity<?> forgotPassword(HttpServletRequest request, @RequestBody ForgotPasswordRequest forgotPasswordRequest, BindingResult bindingResult) {
         List<String> errors = new ArrayList<>();
-        ForgotPasswordRequest forgotPasswordRequest = new ForgotPasswordRequest();
-        if (email == null) {
+        if (forgotPasswordRequest.getEmail() == null) {
             forgotPasswordRequest.setEmail("");
         } else {
-            forgotPasswordRequest.setEmail(email);
+            forgotPasswordRequest.setEmail(forgotPasswordRequest.getEmail());
         }
         forgotPasswordValidator.validate(forgotPasswordRequest, bindingResult);
         ResourceBundleMessageSource resourceBundleMessageSource = new ResourceBundleMessageSource();
         resourceBundleMessageSource.setBasename("messages");
         if (bindingResult.hasErrors()) {
             bindingResult.getAllErrors().forEach(e -> errors.add(resourceBundleMessageSource.getMessage(e, Locale.US)));
-            return ResponseEntity.badRequest().body(new ErrorResponse("Form error.",errors));
+            return ResponseEntity.badRequest().body(new ErrorResponse("Error en el formulario.",errors));
         }
         String token = RandomString.make(30);
         String baseUrl = ServletUriComponentsBuilder
@@ -68,11 +65,11 @@ public class ForgotPasswordController {
                 .build()
                 .toUriString();
         try {
-            if (Objects.equals(userService.updateResetPasswordToken(token, email), "Email not found.")) {
+            if (Objects.equals(userService.updateResetPasswordToken(token, forgotPasswordRequest.getEmail()), "Email not found.")) {
                 return ResponseEntity.internalServerError().body(new MessageResponse("Email not found."));
             } else {
                 String resetPasswordLink = baseUrl + "/api/auth/password/reset?token=" + token;
-                sendEmail(email, resetPasswordLink);
+                sendEmail(forgotPasswordRequest.getEmail(), resetPasswordLink);
                 return ResponseEntity.ok().body(new MessageResponse("We have sent a reset password link to your email."));
             }
         } catch (UnsupportedEncodingException | MessagingException e) {
@@ -102,14 +99,10 @@ public class ForgotPasswordController {
     }
 
     @PostMapping("/reset")
-    public ResponseEntity<?> resetPassword(@Nullable @RequestPart("password") String password, @Nullable @RequestPart("confirmPassword") String confirmPassword, @RequestParam("token") String token, BindingResult bindingResult) {
-        ResetPasswordRequest resetPasswordRequest = new ResetPasswordRequest();
-        if (password == null || confirmPassword == null) {
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest resetPasswordRequest /*@Nullable @RequestPart("password") String password, @Nullable @RequestPart("confirmPassword") String confirmPassword*/, @RequestParam("token") String token, BindingResult bindingResult) {
+        if (resetPasswordRequest.getPassword() == null || resetPasswordRequest.getConfirmPassword() == null) {
             resetPasswordRequest.setPassword("");
             resetPasswordRequest.setConfirmPassword("");
-        } else {
-            resetPasswordRequest.setPassword(password);
-            resetPasswordRequest.setConfirmPassword(confirmPassword);
         }
         resetPasswordValidator.validate(resetPasswordRequest, bindingResult);
         List<String> errors = new ArrayList<>();
@@ -122,10 +115,10 @@ public class ForgotPasswordController {
         User user = userService.getByResetPasswordToken(token);
         if (user == null) {
             return ResponseEntity.badRequest().body(new MessageResponse("Invalid reset token."));
-        } else if (!Objects.equals(password, confirmPassword)) {
+        } else if (!Objects.equals(resetPasswordRequest.getPassword(), resetPasswordRequest.getConfirmPassword())) {
             return ResponseEntity.badRequest().body(new MessageResponse("No coincident passwords."));
         } else {
-            userService.resetPassword(user, password);
+            userService.resetPassword(user, resetPasswordRequest.getPassword());
             return ResponseEntity.ok().body(new MessageResponse("You have successfully changed your password."));
         }
     }

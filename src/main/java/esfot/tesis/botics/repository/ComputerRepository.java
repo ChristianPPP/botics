@@ -12,4 +12,6 @@ import java.util.List;
 public interface ComputerRepository extends JpaRepository<Computer, Long> {
     Computer getComputerByHostName(String hostName);
     List<Computer> getComputersByLabReference(Long labReference);
+    Computer findComputerBySerialCpu(String serialCpu);
+    Computer findComputerBySerialMonitor(String serialMonitor);
 }

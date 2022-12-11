@@ -10,4 +10,5 @@ public interface CommentaryService {
     void storeCommentary(Commentary commentary);
     List<Commentary> getCommentariesByNotUserId(Long idUser);
     Commentary getCommentaryById(Long commentaryId);
+    List<Commentary> getCommentaries();
 }

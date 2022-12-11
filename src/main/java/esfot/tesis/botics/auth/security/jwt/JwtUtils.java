@@ -23,6 +23,9 @@ public class JwtUtils {
     @Value("${botics.app.jwtSecret}")
     private String jwtSecret;
 
+    @Value("${botics.app.jwtIssuer}")
+    private String jwtIssuer;
+
     @Value("${botics.app.jwtExpirationMs}")
     private int jwtExpirationMs;
 
@@ -95,14 +98,15 @@ public class JwtUtils {
     public String generateTokenFromUsername(String username) {
         return Jwts.builder()
                 .setSubject(username)
+                .setIssuer(jwtIssuer)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
+                .setExpiration(new Date((new Date()).getTime() + 400000))
                 .signWith(SignatureAlgorithm.HS512, jwtSecret)
                 .compact();
     }
 
     private ResponseCookie generateCookie(String name, String value, String path) {
-        return ResponseCookie.from(name, value).path(path).maxAge(jwtExpirationMs).httpOnly(true).build();
+        return ResponseCookie.from(name, value).path(path).maxAge(4L).httpOnly(true).build();
     }
 
     private String getCookieValueByName(HttpServletRequest request, String name) {

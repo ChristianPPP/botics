@@ -31,4 +31,9 @@ public class CommentaryServiceImpl implements CommentaryService {
     public Commentary getCommentaryById(Long commentaryId) {
         return commentariesRepository.findCommentaryById(commentaryId);
     }
+
+    @Override
+    public List<Commentary> getCommentaries() {
+        return commentariesRepository.findAll();
+    }
 }

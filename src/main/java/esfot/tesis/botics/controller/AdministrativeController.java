@@ -8,6 +8,9 @@ import esfot.tesis.botics.entity.Ticket;
 import esfot.tesis.botics.payload.request.CommentaryRequest;
 import esfot.tesis.botics.payload.request.ResponseRequest;
 import esfot.tesis.botics.payload.request.TicketRequest;
+import esfot.tesis.botics.payload.response.CommentaryResponse;
+import esfot.tesis.botics.payload.response.ResponseResponse;
+import esfot.tesis.botics.payload.response.TicketResponse;
 import esfot.tesis.botics.service.CommentaryServiceImpl;
 import esfot.tesis.botics.entity.Commentary;
 import esfot.tesis.botics.service.ResponseServiceImpl;
@@ -19,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -49,7 +53,37 @@ public class AdministrativeController {
         if (commentaries.isEmpty()) {
             return ResponseEntity.ok().body(new MessageResponse("No existen comentarios registrados."));
         }else {
-            return ResponseEntity.ok().body(commentaries);
+            List<CommentaryResponse> commentaryResponses = new ArrayList<>();
+            final String[] role = new String[1];
+            final String[] role2 = new String[1];
+            commentaries.forEach( commentary -> {
+                CommentaryResponse commentaryResponse = new CommentaryResponse();
+                ResponseResponse responseResponse = new ResponseResponse();
+                commentaryResponse.setId(commentary.getId());
+                commentaryResponse.setSubject(commentary.getSubject());
+                commentaryResponse.setMessage(commentary.getMessage());
+                commentaryResponse.setState(commentary.isState());
+                commentaryResponse.setFirstName(commentary.getUser().getFirstName());
+                commentaryResponse.setLastName(commentary.getUser().getLastName());
+                commentaryResponse.setEmail(commentary.getUser().getEmail());
+                commentary.getUser().getRoles().forEach(role1 -> role[0] = role1.getName().toString());
+                commentaryResponse.setRole(role[0]);
+                if (commentary.getResponse() == null) {
+                    commentaryResponse.setResponse(null);
+                } else {
+                    responseResponse.setId(commentary.getResponse().getId());
+                    responseResponse.setSubject(commentary.getResponse().getSubject());
+                    responseResponse.setDetails(commentary.getResponse().getDetails());
+                    responseResponse.setFirstName(commentary.getResponse().getUser().getFirstName());
+                    responseResponse.setLastName(commentary.getResponse().getUser().getLastName());
+                    responseResponse.setEmail(commentary.getResponse().getUser().getEmail());
+                    commentary.getResponse().getUser().getRoles().forEach(role3 -> role2[0] = role3.getName().toString());
+                    responseResponse.setRole(role2[0]);
+                    commentaryResponse.setResponse(responseResponse);
+                }
+                commentaryResponses.add(commentaryResponse);
+            });
+            return ResponseEntity.ok().body(commentaryResponses);
         }
     }
 
@@ -72,7 +106,37 @@ public class AdministrativeController {
         if (tickets.isEmpty()) {
             return ResponseEntity.ok().body(new MessageResponse("No existen tickets registrados."));
         }else {
-            return ResponseEntity.ok().body(tickets);
+            List<TicketResponse> ticketResponses = new ArrayList<>();
+            final String[] role = new String[1];
+            final String[] role2 = new String[1];
+            tickets.forEach(ticket -> {
+                TicketResponse ticketResponse = new TicketResponse();
+                ResponseResponse responseResponse = new ResponseResponse();
+                ticketResponse.setId(ticket.getId());
+                ticketResponse.setSubject(ticket.getSubject());
+                ticketResponse.setDescription(ticket.getDescription());
+                ticketResponse.setState(ticket.isState());
+                ticketResponse.setFirstName(ticket.getUser().getFirstName());
+                ticketResponse.setLastName(ticket.getUser().getLastName());
+                ticketResponse.setEmail(ticket.getUser().getEmail());
+                ticket.getUser().getRoles().forEach(role1 -> role[0] = role1.getName().toString());
+                ticketResponse.setRole(role[0]);
+                if (ticket.getResponse() == null) {
+                    ticketResponse.setResponse(null);
+                } else {
+                    responseResponse.setId(ticket.getResponse().getId());
+                    responseResponse.setSubject(ticket.getResponse().getSubject());
+                    responseResponse.setDetails(ticket.getResponse().getDetails());
+                    responseResponse.setFirstName(ticket.getResponse().getUser().getFirstName());
+                    responseResponse.setLastName(ticket.getResponse().getUser().getLastName());
+                    responseResponse.setEmail(ticket.getResponse().getUser().getEmail());
+                    ticket.getResponse().getUser().getRoles().forEach( role3 -> role2[0] = role3.getName().toString());
+                    responseResponse.setRole(role2[0]);
+                    ticketResponse.setResponse(responseResponse);
+                }
+                ticketResponses.add(ticketResponse);
+            });
+            return ResponseEntity.ok().body(ticketResponses);
         }
     }
 
@@ -92,25 +156,62 @@ public class AdministrativeController {
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
     public ResponseEntity<?> indexCommentariesByNotId(@PathVariable("idUser") Long idUser) {
         List<Commentary> commentaries = commentariesService.getCommentariesByNotUserId(idUser);
-        return ResponseEntity.ok().body(commentaries);
+        if (commentaries.isEmpty()) {
+            return ResponseEntity.ok().body(new MessageResponse("No existen comentarios registrados."));
+        }else {
+            List<CommentaryResponse> commentaryResponses = new ArrayList<>();
+            final String[] role = new String[1];
+            final String[] role2 = new String[1];
+            commentaries.forEach( commentary -> {
+                CommentaryResponse commentaryResponse = new CommentaryResponse();
+                ResponseResponse responseResponse = new ResponseResponse();
+                commentaryResponse.setId(commentary.getId());
+                commentaryResponse.setSubject(commentary.getSubject());
+                commentaryResponse.setMessage(commentary.getMessage());
+                commentaryResponse.setState(commentary.isState());
+                commentaryResponse.setFirstName(commentary.getUser().getFirstName());
+                commentaryResponse.setLastName(commentary.getUser().getLastName());
+                commentaryResponse.setEmail(commentary.getUser().getEmail());
+                commentary.getUser().getRoles().forEach(role1 -> role[0] = role1.getName().toString());
+                commentaryResponse.setRole(role[0]);
+                if (commentary.getResponse() == null) {
+                    commentaryResponse.setResponse(null);
+                } else {
+                    responseResponse.setId(commentary.getResponse().getId());
+                    responseResponse.setSubject(commentary.getResponse().getSubject());
+                    responseResponse.setDetails(commentary.getResponse().getDetails());
+                    responseResponse.setFirstName(commentary.getResponse().getUser().getFirstName());
+                    responseResponse.setLastName(commentary.getResponse().getUser().getLastName());
+                    responseResponse.setEmail(commentary.getResponse().getUser().getEmail());
+                    commentary.getResponse().getUser().getRoles().forEach(role3 -> role2[0] = role3.getName().toString());
+                    responseResponse.setRole(role2[0]);
+                    commentaryResponse.setResponse(responseResponse);
+                }
+                commentaryResponses.add(commentaryResponse);
+            });
+            return ResponseEntity.ok().body(commentaryResponses);
+        }
     }
 
     @PostMapping("/manage/commentaries/response/{idUser}/{idCommentary}")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
     public ResponseEntity<?> responseCommentary(@PathVariable("idUser") Long idUser, @PathVariable("idCommentary") Long idCommentary, @RequestBody ResponseRequest responseRequest) {
         Commentary commentary = commentariesService.getCommentaryById(idCommentary);
-        User user = userService.getUserByUserId(idUser);
-        Response response = new Response();
-        response.setDetails(responseRequest.getDetails());
-        response.setSubject(responseRequest.getSubject());
-        response.setUser(user);
-        responseService.storeResponse(response);
-        user.getResponse().add(response);
-        userRepository.save(user);
-        commentary.setResponse(response);
-        commentary.setState(true);
-        commentariesService.storeCommentary(commentary);
-        return ResponseEntity.ok().body(new MessageResponse("Comentario atendido con éxito."));
+        if (commentary.getUser().getId() == idUser) {
+            return ResponseEntity.ok().body(new MessageResponse("No se puede atender a este comentario."));
+        } else {
+            User user = userService.getUserByUserId(idUser);
+            Response response = new Response();
+            response.setDetails(responseRequest.getDetails());
+            response.setSubject(responseRequest.getSubject());
+            response.setUser(user);
+            responseService.storeResponse(response);
+            user.getResponse().add(response);
+            userRepository.save(user);
+            commentary.setResponse(response);
+            commentary.setState(true);
+            commentariesService.storeCommentary(commentary);
+            return ResponseEntity.ok().body(new MessageResponse("Comentario atendido con éxito."));
+        }
     }
-
 }

@@ -11,14 +11,15 @@ import esfot.tesis.botics.auth.payload.response.MessageResponse;
 import esfot.tesis.botics.auth.repository.RoleRepository;
 import esfot.tesis.botics.auth.repository.UserRepository;
 import esfot.tesis.botics.auth.validator.SignupValidator;
-import esfot.tesis.botics.entity.Computer;
-import esfot.tesis.botics.entity.History;
-import esfot.tesis.botics.entity.Lab;
-import esfot.tesis.botics.entity.Software;
+import esfot.tesis.botics.entity.*;
 import esfot.tesis.botics.entity.enums.ELab;
 import esfot.tesis.botics.payload.request.ComputerRequest;
 import esfot.tesis.botics.payload.request.SoftwareRequest;
+import esfot.tesis.botics.payload.response.CommentaryResponse;
+import esfot.tesis.botics.payload.response.HistoryResponse;
+import esfot.tesis.botics.payload.response.ResponseResponse;
 import esfot.tesis.botics.service.*;
+import esfot.tesis.botics.validator.ComputerValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.ResourceBundleMessageSource;
@@ -42,52 +43,72 @@ import java.util.*;
 @RestController
 @RequestMapping("api/v1/admin")
 public class AdminController {
-    @Autowired
-    UserServiceImpl userService;
+    private final UserServiceImpl userService;
 
-    @Autowired
-    SignupValidator signupValidator;
+    private final SignupValidator signupValidator;
 
-    @Autowired
-    UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    PasswordEncoder encoder;
+    private final PasswordEncoder encoder;
 
-    @Autowired
-    RoleRepository roleRepository;
+    private final RoleRepository roleRepository;
 
-    @Autowired
-    LabServiceImpl labService;
+    private final LabServiceImpl labService;
 
-    @Autowired
-    SoftwareServiceImpl softwareService;
+    private final SoftwareServiceImpl softwareService;
 
-    @Autowired
-    ComputerServiceImpl computerService;
+    private final ComputerServiceImpl computerService;
 
-    @Autowired
-    ServletContext servletContext;
+    private final ServletContext servletContext;
 
-    @Autowired
-    HistoryServiceImpl historyService;
+    private final HistoryServiceImpl historyService;
 
     private final TemplateEngine templateEngine;
 
-    public AdminController(TemplateEngine templateEngine){
+    private final ComputerValidator computerValidator;
+
+    private final InternController internController;
+
+    private final CommentaryServiceImpl commentaryService;
+
+    @Autowired
+    public AdminController(UserServiceImpl userService, SignupValidator signupValidator, UserRepository userRepository, PasswordEncoder encoder, RoleRepository roleRepository, LabServiceImpl labService, SoftwareServiceImpl softwareService, ComputerServiceImpl computerService, ServletContext servletContext, HistoryServiceImpl historyService, TemplateEngine templateEngine, ComputerValidator computerValidator, InternController internController, CommentaryServiceImpl commentaryService) {
+        this.userService = userService;
+        this.signupValidator = signupValidator;
+        this.userRepository = userRepository;
+        this.encoder = encoder;
+        this.roleRepository = roleRepository;
+        this.labService = labService;
+        this.softwareService = softwareService;
+        this.computerService = computerService;
+        this.servletContext = servletContext;
+        this.historyService = historyService;
         this.templateEngine = templateEngine;
+        this.computerValidator = computerValidator;
+        this.internController = internController;
+        this.commentaryService = commentaryService;
     }
 
     @GetMapping("/interns")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> indexInterns() {
-        return ResponseEntity.ok().body(userService.getAllInternUsers());
+        List<User> interns = userService.getAllInternUsers();
+        if (interns.isEmpty()) {
+            return ResponseEntity.ok().body(new MessageResponse("No existen registros."));
+        } else {
+            return ResponseEntity.ok().body(interns);
+        }
     }
 
     @GetMapping("/intern/{name}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> showIntern(@PathVariable("name") String name) {
-        return ResponseEntity.ok().body(userService.getInternUser(name));
+        User intern = userService.getInternUser(name);
+        if (intern == null) {
+            return ResponseEntity.ok().body(new MessageResponse("El pasante con nombre "+name+" no se encuentra registrado."));
+        } else {
+            return ResponseEntity.ok().body(intern);
+        }
     }
 
     @PostMapping("/intern/save")
@@ -99,15 +120,15 @@ public class AdminController {
         signupValidator.validate(signUpRequest, bindingResult);
         if (bindingResult.hasErrors()) {
             bindingResult.getAllErrors().forEach(e -> errors.add(resourceBundleMessageSource.getMessage(e, Locale.US)));
-            return ResponseEntity.badRequest().body(new ErrorResponse("Form error.",errors));
+            return ResponseEntity.badRequest().body(new ErrorResponse("Error en el formulario.",errors));
         }
 
         if (userRepository.existsByUsername(signUpRequest.getUsername())) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: Ya existe dicho nombre de usuario."));
         }
 
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: Ya existe una cuenta con dicho email."));
         }
 
         User user = new User(signUpRequest.getUsername(),
@@ -128,7 +149,7 @@ public class AdminController {
         user.setRoles(roles);
         userRepository.save(user);
 
-        return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+        return ResponseEntity.ok(new MessageResponse("Pasante registrado."));
     }
     
     @GetMapping("/intern/disable/{id}")
@@ -136,11 +157,12 @@ public class AdminController {
     public ResponseEntity<?> disableIntern(@PathVariable("id") Long id) {
         User user = userService.getUserById(id);
         if (user == null) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Intern not found."));
+            return ResponseEntity.badRequest().body(new MessageResponse("El pasante no se encuentra registrado."));
+        } else {
+            user.setState(false);
+            userRepository.save(user);
+            return ResponseEntity.ok().body(new MessageResponse("Pasante inhabilitado."));
         }
-        user.setState(false);
-        userRepository.save(user);
-        return ResponseEntity.ok().body(new MessageResponse("Intern disable successfully."));
     }
 
     @GetMapping("/intern/enable/{id}")
@@ -148,17 +170,23 @@ public class AdminController {
     public ResponseEntity<?> enableIntern(@PathVariable("id") Long id) {
         User user = userService.getUserById(id);
         if (user == null) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Intern not found."));
+            return ResponseEntity.badRequest().body(new MessageResponse("El pasante no se encuentra registrado."));
+        } else {
+            user.setState(true);
+            userRepository.save(user);
+            return ResponseEntity.ok().body(new MessageResponse("Pasante habilitado."));
         }
-        user.setState(true);
-        userRepository.save(user);
-        return ResponseEntity.ok().body(new MessageResponse("Intern enable successfully."));
     }
 
     @GetMapping("/labs")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> indexLabs() {
-        return ResponseEntity.ok().body(labService.getAll());
+        List<Lab> labs = labService.getAll();
+        if (labs.isEmpty()) {
+            return ResponseEntity.ok().body(new MessageResponse("No existen registros."));
+        } else {
+            return ResponseEntity.ok().body(labs);
+        }
     }
 
     @GetMapping("/lab/{name}")
@@ -182,7 +210,7 @@ public class AdminController {
         if ("22B".equals(name)) {
             return ResponseEntity.ok().body(labService.getLabByName(ELab.LAB_ET22B));
         }
-        return ResponseEntity.badRequest().body(new MessageResponse("Lab not found."));
+        return ResponseEntity.badRequest().body(new MessageResponse("Laboratorio no encontrado."));
     }
 
     @PostMapping("/software/save/{id}")
@@ -214,7 +242,20 @@ public class AdminController {
 
     @PostMapping("/computer/save")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> saveComputer(@RequestBody ComputerRequest computerRequest) {
+    public ResponseEntity<?> saveComputer(@RequestBody ComputerRequest computerRequest, BindingResult bindingResult) {
+        if (computerService.getComputerByHostName(computerRequest.getHostName()) != null || computerService.getComputerBySerialCpu(computerRequest.getSerialCpu()) != null || computerService.getComputerBySerialMonitor(computerRequest.getSerialMonitor()) != null) {
+            return ResponseEntity.ok().body(new MessageResponse("El hostname, serial del Cpu o serial del monitor ya se encuentran registrados."));
+        }
+        List<String> errors = new ArrayList<>();
+        ResourceBundleMessageSource resourceBundleMessageSource = new ResourceBundleMessageSource();
+        resourceBundleMessageSource.setBasename("messages");
+        computerValidator.validate(computerRequest, bindingResult);
+        /*
+        if (bindingResult.hasErrors()) {
+            bindingResult.getAllErrors().forEach(e -> errors.add(resourceBundleMessageSource.getMessage(e, Locale.US)));
+            return ResponseEntity.badRequest().body(new ErrorResponse("Error en el formulario.",errors));
+        }
+         */
         Computer computer = new Computer(computerRequest.getHostName(), computerRequest.getSerialMonitor(),
                 computerRequest.getSerialKeyboard(), computerRequest.getSerialCpu(), computerRequest.getCodeCpu(),
                 computerRequest.getCodeMonitor(), computerRequest.getCodeKeyboard(), computerRequest.getState(),
@@ -248,16 +289,28 @@ public class AdminController {
         return ResponseEntity.ok().body(computerService.getAll());
     }
 
-    @GetMapping("/computer/{idComputer}")
+    /*
+    @GetMapping("/computer/get/{idComputer}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> indexComputerByLab(@PathVariable("idComputer") Long idComputer) {
-        return ResponseEntity.ok().body(computerService.getComputerByID(idComputer));
+    public ResponseEntity<?> showComputerById(@PathVariable("idComputer") Long idComputer) {
+        Computer computer = computerService.getComputerByID(idComputer);
+        if (computer == null) {
+            return ResponseEntity.ok().body(new MessageResponse("Computadora no encontrada."));
+        } else {
+            return ResponseEntity.ok().body(computer);
+        }
     }
+    */
 
     @GetMapping("/computer/{hostName}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> showComputerByHostName(@PathVariable("hostName") String hostName) {
-        return ResponseEntity.ok().body(computerService.getComputerByHostName(hostName));
+        Computer computer = computerService.getComputerByHostName(hostName);
+        if (computer == null) {
+            return ResponseEntity.ok().body(new MessageResponse("Computadora no encontrada."));
+        } else {
+            return ResponseEntity.ok().body(computerService.getComputerByHostName(hostName));
+        }
     }
 
     @DeleteMapping("/computer/delete/{hostName}")
@@ -332,6 +385,30 @@ public class AdminController {
         return ResponseEntity.ok().body(computerService.getAllByLabReference(idLab));
     }
 
+    @GetMapping("/history")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> indexHistory() {
+        List<History> histories = historyService.getAllHistories();
+        if (histories.isEmpty()) {
+            return ResponseEntity.ok().body(new MessageResponse("No existen registros."));
+        } else {
+            List<HistoryResponse> historyResponses = new ArrayList<>();
+            histories.forEach(history -> {
+                HistoryResponse historyResponse = new HistoryResponse();
+                Lab lab = labService.getLabById(history.getLabReference());
+                Computer computer = computerService.getComputerByID(history.getComputerReference());
+                historyResponse.setId(history.getId());
+                historyResponse.setLabName(lab.getName().toString());
+                historyResponse.setHostName(computer.getHostName());
+                historyResponse.setCodeCpu(computer.getCodeCpu());
+                historyResponse.setChangeDetails(history.getChangeDetails());
+                historyResponse.setState(history.isState());
+                historyResponses.add(historyResponse);
+            });
+            return ResponseEntity.ok().body(historyResponses);
+        }
+    }
+
     @GetMapping("/inventory/report/pdf")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> generatePdfReport(HttpServletRequest request, HttpServletResponse response) {
@@ -345,4 +422,58 @@ public class AdminController {
         byte[] bytes = target.toByteArray();
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(bytes);
     }
+
+    @GetMapping("/commentaries")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> indexCommentaries() {
+        List<Commentary> commentaries = commentaryService.getCommentaries();
+        if (commentaries.isEmpty()) {
+            return ResponseEntity.ok().body(new MessageResponse("No existen comentarios registrados."));
+        }else {
+            List<CommentaryResponse> commentaryResponses = new ArrayList<>();
+            final String[] role = new String[1];
+            final String[] role2 = new String[1];
+            commentaries.forEach( commentary -> {
+                CommentaryResponse commentaryResponse = new CommentaryResponse();
+                ResponseResponse responseResponse = new ResponseResponse();
+                commentaryResponse.setId(commentary.getId());
+                commentaryResponse.setSubject(commentary.getSubject());
+                commentaryResponse.setMessage(commentary.getMessage());
+                commentaryResponse.setState(commentary.isState());
+                commentaryResponse.setFirstName(commentary.getUser().getFirstName());
+                commentaryResponse.setLastName(commentary.getUser().getLastName());
+                commentaryResponse.setEmail(commentary.getUser().getEmail());
+                commentary.getUser().getRoles().forEach(role1 -> role[0] = role1.getName().toString());
+                commentaryResponse.setRole(role[0]);
+                if (commentary.getResponse() == null) {
+                    commentaryResponse.setResponse(null);
+                } else {
+                    responseResponse.setId(commentary.getResponse().getId());
+                    responseResponse.setSubject(commentary.getResponse().getSubject());
+                    responseResponse.setDetails(commentary.getResponse().getDetails());
+                    responseResponse.setFirstName(commentary.getResponse().getUser().getFirstName());
+                    responseResponse.setLastName(commentary.getResponse().getUser().getLastName());
+                    responseResponse.setEmail(commentary.getResponse().getUser().getEmail());
+                    commentary.getResponse().getUser().getRoles().forEach(role3 -> role2[0] = role3.getName().toString());
+                    responseResponse.setRole(role2[0]);
+                    commentaryResponse.setResponse(responseResponse);
+                }
+                commentaryResponses.add(commentaryResponse);
+            });
+            return ResponseEntity.ok().body(commentaryResponses);
+        }
+    }
+
+    @GetMapping("/reserves")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> indexReserves() {
+        return internController.indexReserves();
+    }
+
+    @GetMapping("/tickets")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> indexTickets() {
+        return internController.indexTickets();
+    }
+
 }

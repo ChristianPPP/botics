@@ -43,5 +43,15 @@ public class ComputerServiceImpl implements ComputerService{
     public List<Computer> getAllByLabReference(Long labReference) {
         return computerRepository.getComputersByLabReference(labReference);
     }
+
+    @Override
+    public Computer getComputerBySerialCpu(String serialCpu) {
+        return computerRepository.findComputerBySerialCpu(serialCpu);
+    }
+
+    @Override
+    public Computer getComputerBySerialMonitor(String serialMonitor) {
+        return computerRepository.findComputerBySerialMonitor(serialMonitor);
+    }
 }
 
