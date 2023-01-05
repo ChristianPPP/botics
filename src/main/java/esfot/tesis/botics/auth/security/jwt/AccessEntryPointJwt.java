@@ -25,8 +25,8 @@ public class AccessEntryPointJwt implements AccessDeniedHandler {
 
         final Map<String, Object> body = new HashMap<>();
         body.put("status", HttpServletResponse.SC_FORBIDDEN);
-        body.put("error", "Access Denied");
-        body.put("message", accessDeniedException.getMessage());
+        body.put("error", "Acceso denegado");
+        body.put("message", "Fallo en la autenticación, no se ha iniciado sesión o el token de autenticación ha caducado.");
         body.put("path", request.getServletPath());
 
         final ObjectMapper mapper = new ObjectMapper();

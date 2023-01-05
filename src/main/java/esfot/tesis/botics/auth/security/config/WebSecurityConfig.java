@@ -18,6 +18,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.Collections;
 
 @Configuration
 @EnableGlobalMethodSecurity(prePostEnabled = true)
@@ -26,7 +32,8 @@ public class WebSecurityConfig {
     UserDetailsServiceImpl userDetailsService;
 
     @Autowired
-    private AuthEntryPointJwt unauthorizedHandler;
+    AuthEntryPointJwt unauthorizedHandler;
+
 
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter() {
@@ -59,13 +66,24 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Collections.singletonList("*"));
+        configuration.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE","HEAD"));
+        configuration.setAllowedHeaders(Collections.singletonList("*"));
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.cors().and().csrf().disable()
+        http.cors().configurationSource(corsConfigurationSource()).and().csrf().disable()
                 .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
                 .exceptionHandling().accessDeniedHandler(accessDeniedHandler()).and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
-                .authorizeRequests().antMatchers("/api/auth/**", "/swagger-ui/**", "/docs/**", "/swagger-ui.html").permitAll()
-                .antMatchers("api/v1/profile/**", "api/v1/admin/**").fullyAuthenticated()
+                .authorizeRequests().antMatchers("/api/v1/auth/**", "/swagger-ui/**", "/docs/**", "/swagger-ui.html").permitAll()
+                .antMatchers("api/v1/profile/**", "api/v1/admin/**", "api/v1/administrative/**", "api/v1/intern/**", "api/v1/teacher/**").fullyAuthenticated()
                 .anyRequest().authenticated();
         http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);

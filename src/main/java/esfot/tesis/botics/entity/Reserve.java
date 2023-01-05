@@ -7,8 +7,11 @@ import esfot.tesis.botics.auth.entity.User;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
+import java.util.Date;
 
 @Entity
 @Getter
@@ -37,6 +40,16 @@ public class Reserve {
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "response_id", referencedColumnName = "id")
     private Response response;
+
+
+    //Timestamps
+    @Column(name = "created_at")
+    @CreationTimestamp
+    private Date created_at;
+    @Column(name = "updated_at")
+    @UpdateTimestamp
+    private Date updated_at;
+
 
     public Reserve(String labName, String description) {
         this.labName = labName;

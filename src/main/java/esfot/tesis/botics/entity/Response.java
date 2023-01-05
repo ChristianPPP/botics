@@ -5,8 +5,11 @@ import esfot.tesis.botics.auth.entity.User;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
+import java.util.Date;
 
 @Entity
 @Getter
@@ -39,4 +42,12 @@ public class Response {
     @JsonBackReference
     @OneToOne(mappedBy = "response")
     private Reserve reserve;
+
+    //Timestamps
+    @Column(name = "created_at")
+    @CreationTimestamp
+    private Date created_at;
+    @Column(name = "updated_at")
+    @UpdateTimestamp
+    private Date updated_at;
 }

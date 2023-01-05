@@ -3,9 +3,12 @@ package esfot.tesis.botics.entity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
+import java.util.Date;
 
 @Entity
 @Getter
@@ -26,6 +29,14 @@ public class Avatar {
 
     @Column(name = "path")
     private String path;
+
+    //Timestamps
+    @Column(name = "created_at")
+    @CreationTimestamp
+    private Date created_at;
+    @Column(name = "updated_at")
+    @UpdateTimestamp
+    private Date updated_at;
 
     public Avatar(String name, String type, String path) {
         this.name = name;

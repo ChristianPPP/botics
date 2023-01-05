@@ -4,8 +4,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
+import java.util.Date;
 
 @Entity
 @Getter
@@ -29,6 +32,14 @@ public class History {
 
     @Column(name = "computer_reference")
     private long computerReference;
+
+    //Timestamps
+    @Column(name = "created_at")
+    @CreationTimestamp
+    private Date created_at;
+    @Column(name = "updated_at")
+    @UpdateTimestamp
+    private Date updated_at;
 
     public History(boolean state, long labReference, long computerReference) {
         this.state = state;

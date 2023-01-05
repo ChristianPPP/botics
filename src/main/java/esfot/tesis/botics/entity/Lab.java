@@ -33,12 +33,6 @@ public class Lab {
     @Column(name = "image")
     private String image;
 
-    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinTable(name = "lab_softwares",
-            joinColumns = @JoinColumn(name = "lab_id"),
-            inverseJoinColumns = @JoinColumn(name = "software_id"))
-    private Set<Software> softwares = new HashSet<>();
-
     @JsonIgnore
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(name = "lab_computers",
@@ -46,9 +40,4 @@ public class Lab {
             inverseJoinColumns = @JoinColumn(name = "computer_id"))
     private Set<Computer> computers = new HashSet<>();
 
-    public Lab(ELab name, boolean state, String image) {
-        this.name = name;
-        this.state = state;
-        this.image = image;
-    }
 }

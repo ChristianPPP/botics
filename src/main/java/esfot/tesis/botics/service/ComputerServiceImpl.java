@@ -53,5 +53,10 @@ public class ComputerServiceImpl implements ComputerService{
     public Computer getComputerBySerialMonitor(String serialMonitor) {
         return computerRepository.findComputerBySerialMonitor(serialMonitor);
     }
+
+    @Override
+    public List<Computer> filter(String filter, String value) {
+        return computerRepository.filterComputer(filter, value);
+    }
 }
 

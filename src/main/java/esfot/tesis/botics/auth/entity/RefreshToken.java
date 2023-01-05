@@ -2,11 +2,14 @@ package esfot.tesis.botics.auth.entity;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.util.Date;
 
 @Entity
 @Getter
@@ -27,4 +30,12 @@ public class RefreshToken {
 
     @Column(nullable = false)
     private Instant expiryDate;
+
+    //Timestamps
+    @Column(name = "created_at")
+    @CreationTimestamp
+    private Date created_at;
+    @Column(name = "updated_at")
+    @UpdateTimestamp
+    private Date updated_at;
 }

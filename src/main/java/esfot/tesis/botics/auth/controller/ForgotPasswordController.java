@@ -8,6 +8,11 @@ import esfot.tesis.botics.auth.payload.response.MessageResponse;
 import esfot.tesis.botics.auth.security.service.UserDetailsServiceImpl;
 import esfot.tesis.botics.auth.validator.ForgotPasswordValidator;
 import esfot.tesis.botics.auth.validator.ResetPasswordValidator;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import net.bytebuddy.utility.RandomString;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.ResourceBundleMessageSource;
@@ -29,20 +34,35 @@ import java.util.Objects;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
-@RequestMapping("/api/auth/password")
+@RequestMapping("/api/v1/auth/password")
 public class ForgotPasswordController {
-    @Autowired
-    JavaMailSender mailSender;
+
+    private final JavaMailSender mailSender;
+
+    private final UserDetailsServiceImpl userService;
+
+    private final ForgotPasswordValidator forgotPasswordValidator;
+
+    private final ResetPasswordValidator resetPasswordValidator;
 
     @Autowired
-    UserDetailsServiceImpl userService;
+    public ForgotPasswordController(JavaMailSender mailSender, UserDetailsServiceImpl userService, ForgotPasswordValidator forgotPasswordValidator, ResetPasswordValidator resetPasswordValidator) {
+        this.mailSender = mailSender;
+        this.userService = userService;
+        this.forgotPasswordValidator = forgotPasswordValidator;
+        this.resetPasswordValidator = resetPasswordValidator;
+    }
 
-    @Autowired
-    ForgotPasswordValidator forgotPasswordValidator;
 
-    @Autowired
-    ResetPasswordValidator resetPasswordValidator;
-
+    @Operation(summary = "Endpoint para el envío del correo para restablecer contraseña.", description = "Se enviará al correo electrónico especificado un correo electrónico con las intrucciones para restablecer la contraseña en caso de haberla olvidado, a su vez se genera un token de restablecimiento de contraseña en la base de datos.")
+    @ApiResponses(value= {
+            @ApiResponse(responseCode = "200", description = "Se devolverá un mensaje que indica que se ha enviado el correo de forma existosa.", content =
+                    {@Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class))}),
+            @ApiResponse(responseCode = "400", description = "Esta respuesta indica errores en el formulario o que el correo electrónico no ha sido encontrado.", content =
+                    {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))}),
+            @ApiResponse(responseCode = "500", description = "Esta respuesta indica un error al enviar el correo de restablecimiento.", content =
+                    {@Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class))})
+    })
     @PostMapping(value = "/forgot")
     public ResponseEntity<?> forgotPassword(HttpServletRequest request, @RequestBody ForgotPasswordRequest forgotPasswordRequest, BindingResult bindingResult) {
         List<String> errors = new ArrayList<>();
@@ -65,15 +85,15 @@ public class ForgotPasswordController {
                 .build()
                 .toUriString();
         try {
-            if (Objects.equals(userService.updateResetPasswordToken(token, forgotPasswordRequest.getEmail()), "Email not found.")) {
-                return ResponseEntity.internalServerError().body(new MessageResponse("Email not found."));
+            if (Objects.equals(userService.updateResetPasswordToken(token, forgotPasswordRequest.getEmail()), "Correo electrónico no encontrado.")) {
+                return ResponseEntity.badRequest().body(new MessageResponse("El correo electrónico: " + forgotPasswordRequest.getEmail() + " no se encuentra registrado."));
             } else {
                 String resetPasswordLink = baseUrl + "/api/auth/password/reset?token=" + token;
                 sendEmail(forgotPasswordRequest.getEmail(), resetPasswordLink);
-                return ResponseEntity.ok().body(new MessageResponse("We have sent a reset password link to your email."));
+                return ResponseEntity.ok().body(new MessageResponse("Se ha enviado un enlace para el restablecimiento de la contraseña al correo electrónico: " + forgotPasswordRequest.getEmail()));
             }
         } catch (UnsupportedEncodingException | MessagingException e) {
-            return ResponseEntity.internalServerError().body(new MessageResponse("Error while sending email."));
+            return ResponseEntity.internalServerError().body(new MessageResponse("Error al enviar el correo."));
         }
     }
 
@@ -98,8 +118,17 @@ public class ForgotPasswordController {
         mailSender.send(message);
     }
 
+
+
+    @Operation(summary = "Endpoint para restablecer contraseña.", description = "Se restablece la contraseña enviándose el token generado en el mensaje de correo electrónico y adicionalmente se elimina el token de restablecimiento de la base de datos.")
+    @ApiResponses(value= {
+            @ApiResponse(responseCode = "200", description = "Se devolverá un mensaje que indica que la contraseña ha sido restablecida exitosamente.", content =
+                    {@Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class))}),
+            @ApiResponse(responseCode = "400", description = "Esta respuesta indica errores en el formulario o bien que el token de reinicio no es válido o que las contraseñas no coinciden.", content =
+                    {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))})
+    })
     @PostMapping("/reset")
-    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest resetPasswordRequest /*@Nullable @RequestPart("password") String password, @Nullable @RequestPart("confirmPassword") String confirmPassword*/, @RequestParam("token") String token, BindingResult bindingResult) {
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest resetPasswordRequest, @RequestParam("token") String token, BindingResult bindingResult) {
         if (resetPasswordRequest.getPassword() == null || resetPasswordRequest.getConfirmPassword() == null) {
             resetPasswordRequest.setPassword("");
             resetPasswordRequest.setConfirmPassword("");
@@ -110,16 +139,16 @@ public class ForgotPasswordController {
         resourceBundleMessageSource.setBasename("messages");
         if (bindingResult.hasErrors()) {
             bindingResult.getAllErrors().forEach(e -> errors.add(resourceBundleMessageSource.getMessage(e, Locale.US)));
-            return ResponseEntity.badRequest().body(new ErrorResponse("Form error.",errors));
+            return ResponseEntity.badRequest().body(new ErrorResponse("Errores en el formulario.",errors));
         }
         User user = userService.getByResetPasswordToken(token);
         if (user == null) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Invalid reset token."));
+            return ResponseEntity.badRequest().body(new MessageResponse("Token de reinicio no válido."));
         } else if (!Objects.equals(resetPasswordRequest.getPassword(), resetPasswordRequest.getConfirmPassword())) {
-            return ResponseEntity.badRequest().body(new MessageResponse("No coincident passwords."));
+            return ResponseEntity.badRequest().body(new MessageResponse("Las contraseñas ingresadas no coinciden."));
         } else {
             userService.resetPassword(user, resetPasswordRequest.getPassword());
-            return ResponseEntity.ok().body(new MessageResponse("You have successfully changed your password."));
+            return ResponseEntity.ok().body(new MessageResponse("Contraseña restablecida."));
         }
     }
 }

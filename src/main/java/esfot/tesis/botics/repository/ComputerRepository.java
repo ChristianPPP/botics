@@ -14,4 +14,7 @@ public interface ComputerRepository extends JpaRepository<Computer, Long> {
     List<Computer> getComputersByLabReference(Long labReference);
     Computer findComputerBySerialCpu(String serialCpu);
     Computer findComputerBySerialMonitor(String serialMonitor);
+
+    @Query(value="SELECT * FROM computers WHERE ?1 = ?2", nativeQuery = true)
+    List<Computer> filterComputer(String filter, String value);
 }

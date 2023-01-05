@@ -19,19 +19,19 @@ public class ProfileValidator implements Validator {
     public void validate(Object target, Errors errors) {
         ProfileRequest profileRequest = (ProfileRequest) target;
         String regexNamePattern = "^[A-Z][-a-zA-Z]+$";
-        if (!Pattern.compile(regexNamePattern, Pattern.CASE_INSENSITIVE).matcher(profileRequest.getFirstName()).matches() && !Objects.equals(profileRequest.getFirstName(), "")) {
+        if (profileRequest.getFirstName() != null && !Pattern.compile(regexNamePattern, Pattern.CASE_INSENSITIVE).matcher(profileRequest.getFirstName()).matches() && !Objects.equals(profileRequest.getFirstName(), "")) {
             errors.rejectValue(null, "NotValid.firstName");
         }
-        if ((profileRequest.getFirstName().length() < 3 || profileRequest.getFirstName().length() > 20) && !Objects.equals(profileRequest.getFirstName(), "")) {
+        if (profileRequest.getFirstName() != null && (profileRequest.getFirstName().length() < 3 || profileRequest.getFirstName().length() > 20) && !Objects.equals(profileRequest.getFirstName(), "")) {
             errors.rejectValue(null, "Size.profileRequest.firstName");
         }
-        if (!Pattern.compile(regexNamePattern, Pattern.CASE_INSENSITIVE).matcher(profileRequest.getLastName()).matches() && !Objects.equals(profileRequest.getLastName(), "")) {
+        if (profileRequest.getLastName() != null && !Pattern.compile(regexNamePattern, Pattern.CASE_INSENSITIVE).matcher(profileRequest.getLastName()).matches() && !Objects.equals(profileRequest.getLastName(), "")) {
             errors.rejectValue(null, "NotValid.lastName");
         }
-        if ((profileRequest.getLastName().length() < 3 || profileRequest.getLastName().length() > 20) && !Objects.equals(profileRequest.getLastName(), "")) {
+        if (profileRequest.getLastName() != null &&  (profileRequest.getLastName().length() < 3 || profileRequest.getLastName().length() > 20) && !Objects.equals(profileRequest.getLastName(), "")) {
             errors.rejectValue(null, "Size.profileRequest.lastName");
         }
-        if (profileRequest.getExtension().toString().length() != 4 && profileRequest.getExtension() != 0) {
+        if (profileRequest.getExtension() != null && profileRequest.getExtension().toString().length() != 4 && profileRequest.getExtension() != 0) {
             errors.rejectValue(null, "Size.profileRequest.extension");
         }
     }

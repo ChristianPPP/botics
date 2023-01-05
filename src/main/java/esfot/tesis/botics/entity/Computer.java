@@ -3,15 +3,19 @@ package esfot.tesis.botics.entity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.stereotype.Indexed;
 
 import javax.persistence.*;
 import javax.validation.constraints.Size;
+import java.util.Date;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
+@Indexed
 @Table(name = "computers",
         uniqueConstraints = {@UniqueConstraint(columnNames = "host_name"),
                 @UniqueConstraint(columnNames = "serial_cpu"),
@@ -42,9 +46,8 @@ public class Computer {
     @Column(name = "code_cpu")
     private String codeCpu;
 
-    @ColumnDefault("1")
-    @Column(name = "state", nullable = false)
-    private String state;
+    @Column(name = "state")
+    private boolean state;
 
     @Size(max = 30)
     @Column(name = "model", nullable = false, length = 30)
@@ -71,9 +74,17 @@ public class Computer {
     @Column(name = "lab_reference", nullable = false, columnDefinition = "int default 0")
     private Long labReference;
 
+    //Timestamps
+    @Column(name = "created_at")
+    @CreationTimestamp
+    private Date created_at;
+    @Column(name = "updated_at")
+    @UpdateTimestamp
+    private Date updated_at;
+
     public Computer(String hostName, String serialMonitor, String serialKeyboard, String serialCpu, String codeCpu,
                     String codeMonitor, String codeKeyboard,
-                    String state, String model, String hardDrive, String ram, String processor, String operativeSystem,
+                    boolean state, String model, String hardDrive, String ram, String processor, String operativeSystem,
                     String details, String observations, Long labReference) {
         this.hostName = hostName;
         this.serialMonitor = serialMonitor;

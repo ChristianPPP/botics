@@ -13,4 +13,5 @@ public interface ComputerService {
     List<Computer> getAllByLabReference(Long labReference);
     Computer getComputerBySerialCpu(String serialCpu);
     Computer getComputerBySerialMonitor(String serialMonitor);
+    List<Computer> filter(String filter, String value);
 }

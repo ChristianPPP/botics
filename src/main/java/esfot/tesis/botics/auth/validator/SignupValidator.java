@@ -23,14 +23,17 @@ public class SignupValidator implements Validator {
         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "username", "NotEmpty.username");
         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "email", "NotEmpty.email");
         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "password", "NotEmpty.password");
-        if (!Pattern.compile(regexEmailPattern, Pattern.CASE_INSENSITIVE).matcher(signupRequest.getEmail()).matches()) {
+        if (signupRequest.getEmail() != null && !Pattern.compile(regexEmailPattern, Pattern.CASE_INSENSITIVE).matcher(signupRequest.getEmail()).matches()) {
             errors.rejectValue("email", "NotValid.email");
         }
-        if (signupRequest.getUsername().length() < 3 || signupRequest.getUsername().length() > 20) {
+        if (signupRequest.getUsername() != null && signupRequest.getUsername().length() < 3 || signupRequest.getUsername().length() > 20) {
             errors.rejectValue("username", "Size.signupRequest.username");
         }
-        if (!Pattern.compile(regexPasswordPattern).matcher(signupRequest.getPassword()).matches()) {
+        if (signupRequest.getPassword() != null && !Pattern.compile(regexPasswordPattern).matcher(signupRequest.getPassword()).matches()) {
             errors.rejectValue("password", "NotValid.password");
+        }
+        if (signupRequest.getRole() == null || signupRequest.getRole().isEmpty()) {
+            errors.rejectValue("role", "NotValid.role");
         }
     }
 }

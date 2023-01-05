@@ -2,6 +2,7 @@ package esfot.tesis.botics.auth.security.jwt;
 
 import esfot.tesis.botics.auth.entity.User;
 import esfot.tesis.botics.auth.security.service.UserDetailsImpl;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +17,7 @@ import io.jsonwebtoken.*;
 
 import java.util.Date;
 
+@Slf4j
 @Component
 public class JwtUtils {
     private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
@@ -27,16 +29,13 @@ public class JwtUtils {
     private String jwtIssuer;
 
     @Value("${botics.app.jwtExpirationMs}")
-    private int jwtExpirationMs;
+    private long jwtExpirationMs;
 
     @Value("${botics.app.jwtCookieName}")
     private String jwtCookie;
 
     @Value("${botics.app.jwtRefreshCookieName}")
     private String jwtRefreshCookie;
-
-    @Value("${botics.app.jwtRefreshExpirationMs}")
-    private int jwtRefreshExpirationMs;
 
     public String getJwtFromCookies(HttpServletRequest request) {
         Cookie cookie = WebUtils.getCookie(request, jwtCookie);
@@ -82,7 +81,8 @@ public class JwtUtils {
     public boolean validateJwtToken(String authToken) {
         try {
             Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(authToken);
-            return true;
+            log.info("{}", Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(authToken).getBody().getExpiration().before(new Date()));
+            return !Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(authToken).getBody().getExpiration().before(new Date());
         } catch (SignatureException e) {
             logger.error("Invalid JWT signature: {}", e.getMessage());
         } catch (MalformedJwtException e) {
@@ -91,6 +91,8 @@ public class JwtUtils {
             logger.error("JWT token is unsupported: {}", e.getMessage());
         } catch (IllegalArgumentException e) {
             logger.error("JWT claims string is empty: {}", e.getMessage());
+        } catch (ExpiredJwtException e) {
+            logger.error("JWT is expired: {}", e.getMessage());
         }
         return false;
     }
@@ -100,13 +102,13 @@ public class JwtUtils {
                 .setSubject(username)
                 .setIssuer(jwtIssuer)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date((new Date()).getTime() + 400000))
+                .setExpiration(new Date((System.currentTimeMillis() + jwtExpirationMs)))
                 .signWith(SignatureAlgorithm.HS512, jwtSecret)
                 .compact();
     }
 
     private ResponseCookie generateCookie(String name, String value, String path) {
-        return ResponseCookie.from(name, value).path(path).maxAge(4L).httpOnly(true).build();
+        return ResponseCookie.from(name, value).path(path).maxAge(259200L).httpOnly(true).build();
     }
 
     private String getCookieValueByName(HttpServletRequest request, String name) {

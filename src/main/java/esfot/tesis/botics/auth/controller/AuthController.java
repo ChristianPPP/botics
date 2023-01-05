@@ -17,6 +17,11 @@ import esfot.tesis.botics.auth.security.service.RefreshTokenService;
 import esfot.tesis.botics.auth.security.service.UserDetailsImpl;
 import esfot.tesis.botics.auth.validator.SigninValidator;
 import esfot.tesis.botics.auth.validator.SignupValidator;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.ResourceBundleMessageSource;
@@ -32,39 +37,52 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 public class AuthController {
-    @Autowired
-    AuthenticationManager authenticationManager;
+
+    private final AuthenticationManager authenticationManager;
+
+    private final UserRepository userRepository;
+
+    private final RefreshTokenService refreshTokenService;
+
+    private final RoleRepository roleRepository;
+
+    private final PasswordEncoder encoder;
+
+    private final JwtUtils jwtUtils;
+
+    private final SignupValidator signupValidator;
+
+    private final SigninValidator signinValidator;
+
 
     @Autowired
-    UserRepository userRepository;
+    public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository, RefreshTokenService refreshTokenService, RoleRepository roleRepository, PasswordEncoder encoder, JwtUtils jwtUtils, SignupValidator signupValidator, SigninValidator signinValidator) {
+        this.authenticationManager = authenticationManager;
+        this.userRepository = userRepository;
+        this.refreshTokenService = refreshTokenService;
+        this.roleRepository = roleRepository;
+        this.encoder = encoder;
+        this.jwtUtils = jwtUtils;
+        this.signupValidator = signupValidator;
+        this.signinValidator = signinValidator;
+    }
 
-    @Autowired
-    RefreshTokenService refreshTokenService;
-
-    @Autowired
-    RoleRepository roleRepository;
-
-    @Autowired
-    PasswordEncoder encoder;
-
-    @Autowired
-    JwtUtils jwtUtils;
-
-    @Autowired
-    SignupValidator signupValidator;
-
-    @Autowired
-    SigninValidator signinValidator;
-
+    @Operation(summary = "Endpoint para iniciar sesión.", description = "Se otorgan los detalles del usuario junto con un token de autorización el cual caduca cada 15 minutos, a su vez almacena el token de reinicio en la base de datos.")
+    @ApiResponses(value= {
+            @ApiResponse(responseCode = "200", description = "Se devolverá un objeto de autorización con el token.", content =
+                    {@Content(mediaType = "application/json", schema = @Schema(implementation = UserInfoResponse.class))}),
+            @ApiResponse(responseCode = "401", description = "Esta respuesta indica que las credenciales ingresadas son incorrectas."),
+            @ApiResponse(responseCode = "400", description = "Esta respuesta indica errores en el formulario.", content =
+                    {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))})
+    })
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest, BindingResult bindingResult) {
         List<String> errors = new ArrayList<>();
@@ -86,31 +104,36 @@ public class AuthController {
         Authentication authentication = authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        if (refreshTokenService.getByUserId(userDetails.getId()) == null) {
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(userDetails);
+        ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(userDetails);
 
-            List<String> roles = userDetails.getAuthorities().stream()
-                    .map(GrantedAuthority::getAuthority)
-                    .collect(Collectors.toList());
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
 
-            RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
+        log.info("{}", roles);
 
-            ResponseCookie jwtRefreshCookie = jwtUtils.generateRefreshJwtCookie(refreshToken.getToken());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
 
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
-                    .header(HttpHeaders.SET_COOKIE, jwtRefreshCookie.toString())
-                    .body(new UserInfoResponse(userDetails.getId(),
-                            userDetails.getUsername(),
-                            userDetails.getEmail(),
-                            roles, jwtCookie.toString()));
-        } else {
-            return ResponseEntity.badRequest().body(new MessageResponse("User already autenticated."));
-        }
+        ResponseCookie jwtRefreshCookie = jwtUtils.generateRefreshJwtCookie(refreshToken.getToken());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, jwtRefreshCookie.toString())
+                .body(new UserInfoResponse(userDetails.getId(),
+                        userDetails.getUsername(),
+                        userDetails.getEmail(),
+                        roles, jwtCookie.getValue()));
     }
 
+    @Operation(summary = "Endpoint para registrarse.", description = "Los campos 'username' y 'email' son únicos y sólo se admite el registro para los roles 'admin', 'administrativo' y 'profesor'")
+    @ApiResponses(value= {
+            @ApiResponse(responseCode = "200", description = "Se devolverá un mensaje de registro exitoso.", content =
+                    {@Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class))}),
+            @ApiResponse(responseCode = "400", description = "Esta respuesta indica errores en el formulario o bien que el nombre de usuario o email ya se encuentran registrados.", content =
+                    {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))})
+    })
     @PostMapping(value = "/signup")
     public ResponseEntity<?> registerUser(@RequestBody SignupRequest signUpRequest, BindingResult bindingResult) {
         List<String> errors = new ArrayList<>();
@@ -119,15 +142,14 @@ public class AuthController {
         signupValidator.validate(signUpRequest, bindingResult);
         if (bindingResult.hasErrors()) {
             bindingResult.getAllErrors().forEach(e -> errors.add(resourceBundleMessageSource.getMessage(e, Locale.US)));
-            return ResponseEntity.badRequest().body(new ErrorResponse("Form error.",errors));
+            return ResponseEntity.badRequest().body(new ErrorResponse("Errores en el formulario.",errors));
         }
-
         if (userRepository.existsByUsername(signUpRequest.getUsername())) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: Nombre de usuario ya registrado."));
         }
 
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: Email ya registrado."));
         }
 
         User user = new User(signUpRequest.getUsername(),
@@ -143,24 +165,37 @@ public class AuthController {
                         orElseThrow(() -> new RuntimeException("Error: Role not found."));
                 roles.add(userRole);
             }
-            if ("administrativo".equals(role)) {
+            else if ("administrativo".equals(role)) {
                 Role userRole = roleRepository.findByName(ERole.ROLE_ADMINISTRATIVO).
                         orElseThrow(() -> new RuntimeException("Error: Role not found."));
                 roles.add(userRole);
             }
-            if ("profesor".equals(role)) {
+            else if ("profesor".equals(role)) {
                 Role userRole = roleRepository.findByName(ERole.ROLE_PROFESOR).
                         orElseThrow(() -> new RuntimeException("Error: Role not found."));
                 roles.add(userRole);
             }
+            else {
+                roles.clear();
+            }
         });
-
-        user.setRoles(roles);
-        userRepository.save(user);
-
-        return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+        if (roles.isEmpty()) {
+            return ResponseEntity.ok(new MessageResponse("El rol especificado no es válido."));
+        } else {
+            user.setRoles(roles);
+            userRepository.save(user);
+            return ResponseEntity.ok(new MessageResponse("Usuario registrado."));
+        }
     }
 
+
+    @Operation(summary = "Endpoint para el cirre de sesión.", description = "El cierre de sesión se realiza mediante el JWT token del header.")
+    @ApiResponses(value= {
+            @ApiResponse(responseCode = "200", description = "Se devolverá un mensaje de cierre de sesión exitoso.", content =
+                    {@Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class))}),
+            @ApiResponse(responseCode = "400", description = "Esta respuesta indica que no existe el inicio de sesión de un usuario.", content =
+                    {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))})
+    })
     @PostMapping("/signout")
     public ResponseEntity<?> logoutUser() {
         Object principle = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -172,34 +207,64 @@ public class AuthController {
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
                     .header(HttpHeaders.SET_COOKIE, jwtRefreshCookie.toString())
-                    .body(new MessageResponse("You've been signed out!"));
+                    .body(new MessageResponse("Cierre de sesión correcto."));
         }
-        return ResponseEntity.ok().body(new MessageResponse("No login user"));
+        return ResponseEntity.badRequest().body(new MessageResponse("El token de autenticación está vacío."));
     }
 
-    @PostMapping("/refreshtoken")
-    public ResponseEntity<?> refreshtoken(HttpServletRequest request) {
-        String refreshToken = jwtUtils.getJwtRefreshFromCookies(request);
 
-        if ((refreshToken != null) && (refreshToken.length() > 0)) {
-            return refreshTokenService.findByToken(refreshToken)
+    @Operation(summary = "Endpoint para reiniciar el token de autorización.", description = "Otorga un nuevo token de autorización.")
+    @ApiResponses(value= {
+            @ApiResponse(responseCode = "200", description = "Se devolverá los detalles del usuario con un nuevo JWT token.", content =
+                    {@Content(mediaType = "application/json", schema = @Schema(implementation = UserInfoResponse.class))}),
+            @ApiResponse(responseCode = "400", description = "Esta respuesta indica que el rol no es válido o bien que el token de reinicio no es válido.", content =
+                    {@Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class))})
+    })
+    @PostMapping("/refreshtoken/{token}")
+    public ResponseEntity<?> refreshtoken(@PathVariable("token") String token) {
+        if ((token != null) && (token.length() > 0)) {
+            if (!refreshTokenService.findByToken(token).isPresent()) {
+                return ResponseEntity.badRequest().body(new MessageResponse("El token " + token + " no se encuentra en la base de datos."));
+            }
+            return refreshTokenService.findByToken(token)
                     .map(refreshTokenService::verifyExpiration)
                     .map(RefreshToken::getUser)
                     .map(user -> {
                         ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(user);
-                        ResponseCookie refreshCookie = ResponseCookie
-                                .from("refreshToken", refreshToken)
-                                .path("/api")
-                                .httpOnly(true)
-                                .build();
+                        ResponseCookie refreshCookie = jwtUtils.generateRefreshJwtCookie(token);
+                        List<String> roles = new ArrayList<>();
+                        user.getRoles().forEach(role -> {
+                            if (role.getName() == ERole.ROLE_ADMIN) {
+                                roles.add("ROLE_ADMIN");
+                            }
+                            if (role.getName() == ERole.ROLE_ADMINISTRATIVO) {
+                                roles.add("ROLE_ADMINISTRATIVO");
+                            }
+                            if (role.getName() == ERole.ROLE_PROFESOR) {
+                                roles.add("ROLE_PROFESOR");
+                            }
+                            if (role.getName() == ERole.ROLE_PASANTE) {
+                                roles.add("ROLE_PASANTE");
+                            } else {
+                                roles.clear();
+                            }
+                        });
+                        if (roles.isEmpty()) {
+                            ResponseEntity.badRequest().body(new MessageResponse("Rol no válido."));
+                        }
                         return ResponseEntity.ok()
                                 .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
                                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
-                                .body(new MessageResponse("Token is refreshed successfully!"));
+                                .body(new UserInfoResponse(user.getId(),
+                                        user.getUsername(),
+                                        user.getEmail(),
+                                        roles, jwtCookie.getValue()));
                     })
-                    .orElseThrow(() -> new TokenRefreshException(refreshToken,
-                            "Refresh token is not in database!"));
+                    .orElseThrow(() ->
+                        new TokenRefreshException(token,
+                                "El token de reinicio no se encuentra en la base de datos.")
+                    );
         }
-        return ResponseEntity.badRequest().body(new MessageResponse("Refresh Token is empty!"));
+        return ResponseEntity.badRequest().body(new MessageResponse("Token de reinicio vacío."));
     }
 }

@@ -20,7 +20,4 @@ public class Role {
     @Column(name = "name", length = 20)
     private ERole name;
 
-    public Role(ERole name) {
-        this.name = name;
-    }
 }
