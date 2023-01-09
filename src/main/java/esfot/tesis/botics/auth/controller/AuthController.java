@@ -112,8 +112,6 @@ public class AuthController {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
 
-        log.info("{}", roles);
-
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
 
         ResponseCookie jwtRefreshCookie = jwtUtils.generateRefreshJwtCookie(refreshToken.getToken());
@@ -124,7 +122,7 @@ public class AuthController {
                 .body(new UserInfoResponse(userDetails.getId(),
                         userDetails.getUsername(),
                         userDetails.getEmail(),
-                        roles, jwtCookie.getValue()));
+                        roles, jwtCookie.getValue(), jwtRefreshCookie.getValue()));
     }
 
     @Operation(summary = "Endpoint para registrarse.", description = "Los campos 'username' y 'email' son únicos y sólo se admite el registro para los roles 'admin', 'administrativo' y 'profesor'")
@@ -258,7 +256,7 @@ public class AuthController {
                                 .body(new UserInfoResponse(user.getId(),
                                         user.getUsername(),
                                         user.getEmail(),
-                                        roles, jwtCookie.getValue()));
+                                        roles, jwtCookie.getValue(), refreshCookie.getValue()));
                     })
                     .orElseThrow(() ->
                         new TokenRefreshException(token,

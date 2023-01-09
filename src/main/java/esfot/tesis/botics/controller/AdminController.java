@@ -16,6 +16,7 @@ import esfot.tesis.botics.entity.enums.ELab;
 import esfot.tesis.botics.payload.request.ComputerRequest;
 import esfot.tesis.botics.payload.response.CommentaryResponse;
 import esfot.tesis.botics.payload.response.HistoryResponse;
+import esfot.tesis.botics.payload.response.LabResponse;
 import esfot.tesis.botics.payload.response.ResponseResponse;
 import esfot.tesis.botics.service.*;
 import esfot.tesis.botics.validator.ComputerValidator;
@@ -45,6 +46,10 @@ import java.util.*;
 @Slf4j
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
+@ApiResponses(value= {
+        @ApiResponse(responseCode = "401", description = "Esta respuesta indica un fallo de autenticación, para los endpoints privados esto puede inidicar que el JWT token ha caducado y se requiere obtener un nuevo token.", content =
+                {@Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class))})
+})
 @RequestMapping("api/v1/admin")
 public class AdminController {
     private final UserServiceImpl userService;
@@ -484,7 +489,7 @@ public class AdminController {
                     {@Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class))})
     })
     @PutMapping("/computer/reassign/{idLab1}/{idLab2}/{idComputer}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')") 
     public ResponseEntity<?> reassignComputerFromLabToLab(@PathVariable("idLab1") Long idLab1, @PathVariable("idLab2") Long idLab2, @PathVariable("idComputer") Long idComputer, @RequestParam(value = "changeDetails") String changeDetails) {
         Lab lab1 = labService.getLabById(idLab1);
         Lab lab2 = labService.getLabById(idLab2);
@@ -521,7 +526,7 @@ public class AdminController {
     }
 
 
-    @Operation(summary = "Endpoint para listar el historial de movimiento de computadoras.", description = "Retorna un arreglo de asignaciones, desasignaciones y cambios de computadoras entre laboratorios.")
+    @Operation(summary = "Endpoint para listar el historial de movimiento de computadoras.", description = "Retorna un arreglo de asignaciones, desasignaciones y cambios de computadoras entre laboratorios para generar el reporte en PDF.")
     @ApiResponses(value= {
             @ApiResponse(responseCode = "200", description = "Se devolverá la lista del historial registrado o un mensaje si no existen registros.", content =
                     {@Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class))})
@@ -544,17 +549,21 @@ public class AdminController {
                 historyResponse.setCodeCpu(computer.getCodeCpu());
                 historyResponse.setChangeDetails(history.getChangeDetails());
                 historyResponse.setState(history.isState());
+                historyResponse.setCreatedAt(history.getCreatedAt());
+                historyResponse.setUpdatedAt(history.getUpdatedAt());
                 historyResponses.add(historyResponse);
             });
             return ResponseEntity.ok().body(historyResponses);
         }
     }
 
-    @GetMapping("/inventory/report/pdf")
+    /*
+    @GetMapping(value = "/inventory/report/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> generatePdfReport(HttpServletRequest request, HttpServletResponse response) {
         WebContext context = new WebContext(request, response, servletContext);
         context.setVariable("labs", labService.getAll());
+        log.info("{}", labService.getAll().get(0).getComputers());
         String ireport = templateEngine.process("ireport", context);
         ByteArrayOutputStream target = new ByteArrayOutputStream();
         ConverterProperties converterProperties = new ConverterProperties();
@@ -562,6 +571,31 @@ public class AdminController {
         HtmlConverter.convertToPdf(ireport, target, converterProperties);
         byte[] bytes = target.toByteArray();
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(bytes);
+    }
+     */
+
+
+    @Operation(summary = "Endpoint para listar laboratorios y computadoras.", description = "Retorna un arreglo de laboratorios con sus respectivos arreglos de computadoras para generar el reporte en PDF.")
+    @ApiResponses(value= {
+            @ApiResponse(responseCode = "200", description = "Se devolverá la lista de laboratorios con sus computadoras o un mensaje si no existen registros.", content =
+                    {@Content(mediaType = "application/json", schema = @Schema(implementation = LabResponse.class))})
+    })
+    @GetMapping("/inventory/labs/computers/index")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> indexComputersByLabs() {
+        List<Lab> labs = labService.getAll();
+        List<LabResponse> labResponses = new ArrayList<>();
+        if (labs.isEmpty()) {
+            return ResponseEntity.ok().body(new MessageResponse("No existen registros."));
+        } else {
+            labs.forEach((lab) -> {
+                LabResponse labResponse = new LabResponse();
+                labResponse.setLab(lab);
+                labResponse.setComputers(computerService.getAllByLabReference(lab.getId()));
+                labResponses.add(labResponse);
+            });
+            return ResponseEntity.ok().body(labResponses);
+        }
     }
 
 
@@ -590,6 +624,8 @@ public class AdminController {
                 commentaryResponse.setFirstName(commentary.getUser().getFirstName());
                 commentaryResponse.setLastName(commentary.getUser().getLastName());
                 commentaryResponse.setEmail(commentary.getUser().getEmail());
+                commentaryResponse.setCreatedAt(commentary.getCreatedAt());
+                commentaryResponse.setUpdatedAt(commentary.getUpdatedAt());
                 commentary.getUser().getRoles().forEach(role1 -> role[0] = role1.getName().toString());
                 commentaryResponse.setRole(role[0]);
                 if (commentary.getResponse() == null) {
@@ -603,6 +639,8 @@ public class AdminController {
                     responseResponse.setEmail(commentary.getResponse().getUser().getEmail());
                     commentary.getResponse().getUser().getRoles().forEach(role3 -> role2[0] = role3.getName().toString());
                     responseResponse.setRole(role2[0]);
+                    responseResponse.setCreatedAt(commentary.getResponse().getCreatedAt());
+                    responseResponse.setUpdatedAt(commentary.getResponse().getUpdatedAt());
                     commentaryResponse.setResponse(responseResponse);
                 }
                 commentaryResponses.add(commentaryResponse);

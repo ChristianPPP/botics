@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Date;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -12,6 +14,8 @@ public class TicketResponse {
     private String subject;
     private String description;
     private boolean state;
+    private Date createdAt;
+    private Date updatedAt;
     //Usuario
     private String firstName;
     private String lastName;

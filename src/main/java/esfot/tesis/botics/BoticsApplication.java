@@ -110,11 +110,11 @@ public class BoticsApplication {
 
 	@Bean
 	public OpenAPI customOpenAPI() {
-		return new OpenAPI().addServersItem(new Server().url("https://botics.loca.lt")).addServersItem(new Server().url("http://localhost:8080"))
+		return new OpenAPI().addServersItem(new Server().url("https://botics.loca.lt")).addServersItem(new Server().url("http://localhost:8080")).addServersItem(new Server().url("https://boticssys.loca.lt"))
 				.components(new Components().addSecuritySchemes("Access Token",
 						new SecurityScheme().type(SecurityScheme.Type.APIKEY)
 								.in(SecurityScheme.In.HEADER).bearerFormat("jwt").name("Authorization")))
-				.info(new Info().title("BOTICS API").version("0.0.1")
+				.info(new Info().title("BOTICS API").version("0.0.1").description("Backend para la gestión de laboratorios de la Escuela de Formación de Tecnólogos")
 						.license(new License().name("ESFOT").url("https://esfot.epn.edu.ec")))
 				.addSecurityItem(new SecurityRequirement().addList("Access Token"));
 	}

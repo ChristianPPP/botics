@@ -4,6 +4,8 @@ package esfot.tesis.botics.payload.response;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Date;
+
 @Getter
 @Setter
 public class HistoryResponse {
@@ -13,4 +15,6 @@ public class HistoryResponse {
     private String labName;
     private String hostName;
     private String codeCpu;
+    private Date createdAt;
+    private Date updatedAt;
 }

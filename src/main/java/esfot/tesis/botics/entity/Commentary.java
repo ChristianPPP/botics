@@ -43,10 +43,10 @@ public class Commentary {
     //Timestamps
     @Column(name = "created_at")
     @CreationTimestamp
-    private Date created_at;
+    private Date createdAt;
     @Column(name = "updated_at")
     @UpdateTimestamp
-    private Date updated_at;
+    private Date updatedAt;
 
     public Commentary(String subject, String message) {
         this.subject = subject;

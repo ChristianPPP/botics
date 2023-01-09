@@ -32,6 +32,10 @@ import java.util.Objects;
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @Slf4j
+@ApiResponses(value= {
+        @ApiResponse(responseCode = "401", description = "Esta respuesta indica un fallo de autenticación, para los endpoints privados esto puede inidicar que el JWT token ha caducado y se requiere obtener un nuevo token.", content =
+                {@Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class))})
+})
 @RequestMapping("/api/v1/profile")
 public class ProfileController {
 

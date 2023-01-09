@@ -41,6 +41,10 @@ import java.util.Locale;
 @Slf4j
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
+@ApiResponses(value= {
+        @ApiResponse(responseCode = "401", description = "Esta respuesta indica un fallo de autenticación, para los endpoints privados esto puede inidicar que el JWT token ha caducado y se requiere obtener un nuevo token.", content =
+                {@Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class))})
+})
 @RequestMapping("api/v1/administrative")
 public class AdministrativeController {
     private final CommentaryServiceImpl commentariesService;
@@ -97,6 +101,8 @@ public class AdministrativeController {
                 commentaryResponse.setFirstName(commentary.getUser().getFirstName());
                 commentaryResponse.setLastName(commentary.getUser().getLastName());
                 commentaryResponse.setEmail(commentary.getUser().getEmail());
+                commentaryResponse.setCreatedAt(commentary.getCreatedAt());
+                commentaryResponse.setUpdatedAt(commentary.getUpdatedAt());
                 commentary.getUser().getRoles().forEach(role1 -> role[0] = role1.getName().toString());
                 commentaryResponse.setRole(role[0]);
                 if (commentary.getResponse() == null) {
@@ -110,6 +116,8 @@ public class AdministrativeController {
                     responseResponse.setEmail(commentary.getResponse().getUser().getEmail());
                     commentary.getResponse().getUser().getRoles().forEach(role3 -> role2[0] = role3.getName().toString());
                     responseResponse.setRole(role2[0]);
+                    responseResponse.setCreatedAt(commentary.getResponse().getCreatedAt());
+                    responseResponse.setUpdatedAt(commentary.getResponse().getUpdatedAt());
                     commentaryResponse.setResponse(responseResponse);
                 }
                 commentaryResponses.add(commentaryResponse);
@@ -177,6 +185,8 @@ public class AdministrativeController {
                 ticketResponse.setEmail(ticket.getUser().getEmail());
                 ticket.getUser().getRoles().forEach(role1 -> role[0] = role1.getName().toString());
                 ticketResponse.setRole(role[0]);
+                ticketResponse.setCreatedAt(ticket.getCreatedAt());
+                ticketResponse.setUpdatedAt(ticket.getUpdatedAt());
                 if (ticket.getResponse() == null) {
                     ticketResponse.setResponse(null);
                 } else {
@@ -188,6 +198,8 @@ public class AdministrativeController {
                     responseResponse.setEmail(ticket.getResponse().getUser().getEmail());
                     ticket.getResponse().getUser().getRoles().forEach( role3 -> role2[0] = role3.getName().toString());
                     responseResponse.setRole(role2[0]);
+                    responseResponse.setCreatedAt(ticket.getResponse().getCreatedAt());
+                    responseResponse.setUpdatedAt(ticket.getResponse().getUpdatedAt());
                     ticketResponse.setResponse(responseResponse);
                 }
                 ticketResponses.add(ticketResponse);
@@ -255,6 +267,8 @@ public class AdministrativeController {
                 commentaryResponse.setEmail(commentary.getUser().getEmail());
                 commentary.getUser().getRoles().forEach(role1 -> role[0] = role1.getName().toString());
                 commentaryResponse.setRole(role[0]);
+                commentaryResponse.setCreatedAt(commentary.getCreatedAt());
+                commentaryResponse.setUpdatedAt(commentary.getUpdatedAt());
                 if (commentary.getResponse() == null) {
                     commentaryResponse.setResponse(null);
                 } else {
@@ -266,6 +280,8 @@ public class AdministrativeController {
                     responseResponse.setEmail(commentary.getResponse().getUser().getEmail());
                     commentary.getResponse().getUser().getRoles().forEach(role3 -> role2[0] = role3.getName().toString());
                     responseResponse.setRole(role2[0]);
+                    responseResponse.setCreatedAt(commentary.getResponse().getCreatedAt());
+                    responseResponse.setUpdatedAt(commentary.getResponse().getUpdatedAt());
                     commentaryResponse.setResponse(responseResponse);
                 }
                 commentaryResponses.add(commentaryResponse);

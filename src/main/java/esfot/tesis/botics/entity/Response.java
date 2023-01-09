@@ -46,8 +46,8 @@ public class Response {
     //Timestamps
     @Column(name = "created_at")
     @CreationTimestamp
-    private Date created_at;
+    private Date createdAt;
     @Column(name = "updated_at")
     @UpdateTimestamp
-    private Date updated_at;
+    private Date updatedAt;
 }
