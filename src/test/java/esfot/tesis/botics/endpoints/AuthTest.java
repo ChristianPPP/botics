@@ -20,7 +20,7 @@ public class AuthTest {
     @Test
     public void signinShouldReturnOk() throws Exception {
         String request = "{" +
-                "\"username\": \"pasante\"," +
+                "\"username\": \"admin\"," +
                 "\"password\": \"Secret1*\"}";
         this.mockMvc.perform(post(uri + "signin").contentType(MediaType.APPLICATION_JSON).content(request)).andExpect(status().isOk());
     }
@@ -35,4 +35,14 @@ public class AuthTest {
                 "}";
         this.mockMvc.perform(post(uri + "signup").contentType(MediaType.APPLICATION_JSON).content(request)).andExpect(status().isOk());
     }
+
+    @Test
+    public void resetPasswordShouldReturnOk() throws Exception {
+        String request = "{" +
+                "\"password\": \"Secret2*\"," +
+                "\"confirmPassword\":  \"Secret2*\"" +
+                "}";
+        this.mockMvc.perform(post(uri + "password/reset" + "?token=BWFm55VZw7adTD34538ByHwsL32PHk").contentType(MediaType.APPLICATION_JSON).content(request)).andExpect(status().isOk());
+    }
+
 }

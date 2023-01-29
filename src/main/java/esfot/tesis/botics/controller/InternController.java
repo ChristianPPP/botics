@@ -222,6 +222,7 @@ public class InternController {
         List<String> errors = new ArrayList<>();
         ResourceBundleMessageSource resourceBundleMessageSource = new ResourceBundleMessageSource();
         resourceBundleMessageSource.setBasename("messages");
+        responseValidator.validate(responseRequest, bindingResult);
         if (reserve == null) {
             return ResponseEntity.badRequest().body("El ticket con id "+idReserve+" no se encuentra registrado.");
         }

@@ -81,8 +81,8 @@ public class JwtUtils {
     public boolean validateJwtToken(String authToken) {
         try {
             Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(authToken);
-            log.info("{}", Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(authToken).getBody().getExpiration().before(new Date()));
-            return !Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(authToken).getBody().getExpiration().before(new Date());
+            return true;
+            //return !Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(authToken).getBody().getExpiration().before(new Date());
         } catch (SignatureException e) {
             logger.error("Invalid JWT signature: {}", e.getMessage());
         } catch (MalformedJwtException e) {

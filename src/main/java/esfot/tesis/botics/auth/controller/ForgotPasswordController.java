@@ -84,11 +84,12 @@ public class ForgotPasswordController {
                 .replacePath(null)
                 .build()
                 .toUriString();
+        String frontUrl = "http://localhost:4200/auth/nueva-contraseña";
         try {
             if (Objects.equals(userService.updateResetPasswordToken(token, forgotPasswordRequest.getEmail()), "Correo electrónico no encontrado.")) {
                 return ResponseEntity.badRequest().body(new MessageResponse("El correo electrónico: " + forgotPasswordRequest.getEmail() + " no se encuentra registrado."));
             } else {
-                String resetPasswordLink = baseUrl + "/api/auth/password/reset?token=" + token;
+                String resetPasswordLink = frontUrl + "?token=" + token;
                 sendEmail(forgotPasswordRequest.getEmail(), resetPasswordLink);
                 return ResponseEntity.ok().body(new MessageResponse("Se ha enviado un enlace para el restablecimiento de la contraseña al correo electrónico: " + forgotPasswordRequest.getEmail()));
             }

@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Component
 public class AuthEntryPointJwt implements AuthenticationEntryPoint {
@@ -29,6 +30,11 @@ public class AuthEntryPointJwt implements AuthenticationEntryPoint {
 
         final Map<String, Object> body = new HashMap<>();
         body.put("status", HttpServletResponse.SC_UNAUTHORIZED);
+        if (Objects.equals(authException.getMessage(), "Bad credentials")) {
+            body.put("detail", "Correo electrónico, nombre de usuario o contraseña inocrrecta.");
+        } else {
+            body.put("detail", authException.getMessage());
+        }
         body.put("error", "No autorizado.");
         body.put("message", "Fallo en la autorización, no se ha iniciado sesión o el token de autenticación ha caducado.");
         body.put("path", request.getServletPath());

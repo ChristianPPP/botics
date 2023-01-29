@@ -14,12 +14,14 @@ import esfot.tesis.botics.auth.validator.SignupValidator;
 import esfot.tesis.botics.entity.*;
 import esfot.tesis.botics.entity.enums.ELab;
 import esfot.tesis.botics.payload.request.ComputerRequest;
+import esfot.tesis.botics.payload.request.ProfileRequest;
 import esfot.tesis.botics.payload.response.CommentaryResponse;
 import esfot.tesis.botics.payload.response.HistoryResponse;
 import esfot.tesis.botics.payload.response.LabResponse;
 import esfot.tesis.botics.payload.response.ResponseResponse;
 import esfot.tesis.botics.service.*;
 import esfot.tesis.botics.validator.ComputerValidator;
+import esfot.tesis.botics.validator.ProfileValidator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -78,8 +80,10 @@ public class AdminController {
 
     private final CommentaryServiceImpl commentaryService;
 
+    private final ProfileValidator profileValidator;
+
     @Autowired
-    public AdminController(UserServiceImpl userService, SignupValidator signupValidator, UserRepository userRepository, PasswordEncoder encoder, RoleRepository roleRepository, LabServiceImpl labService, ComputerServiceImpl computerService, ServletContext servletContext, HistoryServiceImpl historyService, TemplateEngine templateEngine, ComputerValidator computerValidator, InternController internController, CommentaryServiceImpl commentaryService) {
+    public AdminController(UserServiceImpl userService, SignupValidator signupValidator, UserRepository userRepository, PasswordEncoder encoder, RoleRepository roleRepository, LabServiceImpl labService, ComputerServiceImpl computerService, ServletContext servletContext, HistoryServiceImpl historyService, TemplateEngine templateEngine, ComputerValidator computerValidator, InternController internController, CommentaryServiceImpl commentaryService, ProfileValidator profileValidator) {
         this.userService = userService;
         this.signupValidator = signupValidator;
         this.userRepository = userRepository;
@@ -93,6 +97,7 @@ public class AdminController {
         this.computerValidator = computerValidator;
         this.internController = internController;
         this.commentaryService = commentaryService;
+        this.profileValidator = profileValidator;
     }
 
 
@@ -162,17 +167,30 @@ public class AdminController {
 
         Set<String> strRoles = signUpRequest.getRole();
         Set<Role> roles = new HashSet<>();
-
+        if (!signUpRequest.getRole().contains("pasante")) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Rol especificado no válido."));
+        }
         strRoles.forEach(role -> {
             if ("pasante".equals(role)) {
                 Role userRole = roleRepository.findByName(ERole.ROLE_PASANTE).
-                        orElseThrow(() -> new RuntimeException("Error: Role not found."));
+                        orElseThrow(() -> new RuntimeException("Error: Rol no encontrado."));
                 roles.add(userRole);
             }
         });
         user.setRoles(roles);
+        ProfileRequest profileRequest = new ProfileRequest(signUpRequest.getFirstName(), signUpRequest.getLastName(), 0);
+        if (signUpRequest.getFirstName() == "" || signUpRequest.getLastName() == "") {
+            return ResponseEntity.badRequest().body(new MessageResponse("Nombre o apellido no válidos."));
+        }
+        profileValidator.validate(profileRequest, bindingResult);
+        if (bindingResult.hasErrors()) {
+            bindingResult.getAllErrors().forEach(e -> errors.add(resourceBundleMessageSource.getMessage(e, Locale.US)));
+            return ResponseEntity.badRequest().body(new ErrorResponse("Errores en el formulario.",errors));
+        }
+        user.setFirstName(signUpRequest.getFirstName());
+        user.setLastName(signUpRequest.getLastName());
+        user.setExtension(0);
         userRepository.save(user);
-
         return ResponseEntity.ok(new MessageResponse("Pasante registrado."));
     }
 
@@ -267,7 +285,7 @@ public class AdminController {
     @ApiResponses(value= {
             @ApiResponse(responseCode = "200", description = "Se devolverá un mensaje que indica que el computador ha sido registrado o bien que el nombre de host, serial del Cpu o serial del monitor ya se encuentran registrados..", content =
                     {@Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class))}),
-            @ApiResponse(responseCode = "400", description = "Esta respuesta indica errores en el formulario o bien que el nombre de usuario o email ya se encuentran registrados.", content =
+            @ApiResponse(responseCode = "400", description = "Esta respuesta indica errores en el formulario.", content =
                     {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))})
     })
     @PostMapping("/computer/save")
@@ -290,7 +308,30 @@ public class AdminController {
                 computerRequest.getModel(), computerRequest.getHardDrive(), computerRequest.getRam(),
                 computerRequest.getProcessor(), computerRequest.getOperativeSystem(), computerRequest.getDetails(),
                 computerRequest.getObservations(), computerRequest.getLabReference());
-        if (computerService.getComputerByHostName(computerRequest.getHostName()) != null) {
+        computerService.saveComputer(computer);
+        return ResponseEntity.ok().body(new MessageResponse("Computador registrado."));
+    }
+
+    @Operation(summary = "Endpoint para actualizar los datos de una computadora", description = "Se actualizaran los datos de una computadora, siendo que los campos 'hostname', 'serialCpu' y 'serialMonitor' no serán modificados.")
+    @ApiResponses(value= {
+            @ApiResponse(responseCode = "200", description = "Se devolverá un mensaje que indica que el computador ha sido registrado o bien que el nombre de host, serial del Cpu o serial del monitor ya se encuentran registrados..", content =
+                    {@Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class))}),
+            @ApiResponse(responseCode = "400", description = "Esta respuesta indica errores en el formulario o que la computadora especificada no se encuentra registrada.", content =
+                    {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))})
+    })
+    @PutMapping("/computer/update")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateComputer(@RequestBody ComputerRequest computerRequest, BindingResult bindingResult) {
+        List<String> errors = new ArrayList<>();
+        ResourceBundleMessageSource resourceBundleMessageSource = new ResourceBundleMessageSource();
+        resourceBundleMessageSource.setBasename("messages");
+        computerValidator.validate(computerRequest, bindingResult);
+        if (bindingResult.hasErrors()) {
+            bindingResult.getAllErrors().forEach(e -> errors.add(resourceBundleMessageSource.getMessage(e, Locale.US)));
+            return ResponseEntity.badRequest().body(new ErrorResponse("Errores en el formulario.",errors));
+        }
+        Computer computer = computerService.getComputerByHostName(computerRequest.getHostName());
+        if (computer != null) {
             computer = computerService.getComputerByHostName(computerRequest.getHostName());
             computer.setSerialMonitor(computerRequest.getSerialMonitor());
             computer.setSerialKeyboard(computerRequest.getSerialKeyboard());
@@ -306,9 +347,11 @@ public class AdminController {
             computer.setDetails(computerRequest.getDetails());
             computer.setObservations(computerRequest.getObservations());
             computer.setLabReference(computerRequest.getLabReference());
+            computerService.saveComputer(computer);
+            return ResponseEntity.ok().body(new MessageResponse("Datos del computador actualizados."));
+        } else {
+            return ResponseEntity.badRequest().body(new MessageResponse("La computadora especificada no se encuentra registrada."));
         }
-        computerService.saveComputer(computer);
-        return ResponseEntity.ok().body(new MessageResponse("Computer saved."));
     }
 
 
@@ -328,7 +371,7 @@ public class AdminController {
         } else {
             computer.setState(true);
             computerService.saveComputer(computer);
-            return ResponseEntity.ok().body(new MessageResponse("La computadora "+computer.getHostName()+" se ecneuntra en estado activo."));
+            return ResponseEntity.ok().body(new MessageResponse("La computadora "+computer.getHostName()+" se encuentra en estado activo."));
         }
     }
 
@@ -349,7 +392,7 @@ public class AdminController {
         } else {
             computer.setState(false);
             computerService.saveComputer(computer);
-            return ResponseEntity.ok().body(new MessageResponse("La computadora "+computer.getHostName()+" se ecneuntra en estado inactivo."));
+            return ResponseEntity.ok().body(new MessageResponse("La computadora "+computer.getHostName()+" se encuentra en estado inactivo."));
         }
     }
 
@@ -386,24 +429,6 @@ public class AdminController {
             return ResponseEntity.ok().body(computerService.getComputerByHostName(hostName));
         }
     }
-
-    @Operation(summary = "Endpoint para eliminar una computadora por su nombre de host.", description = "Elimina una computadora según su nombre de host.")
-    @ApiResponses(value= {
-            @ApiResponse(responseCode = "200", description = "Se devolverá un mensaje que indica que la computadora ha sido eliminada o un mensaje si no se ha encontrado la computadora con dicho nombre de host.", content =
-                    {@Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class))})
-    })
-    @DeleteMapping("/computer/delete/{hostName}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> deleteComputer(@PathVariable("hostName") String hostName) {
-        Computer computer = computerService.getComputerByHostName(hostName);
-        if (computer == null) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Computadora no encontrada."));
-        } else {
-            computerService.deleteComputer(computer);
-            return ResponseEntity.ok().body(new MessageResponse("Computadora borrada."));
-        }
-    }
-
 
     @Operation(summary = "Endpoint para asignar una computadora a un laboratorio.", description = "Asigna una computadora según su id a un laboratorio según el id de este y adicionalmente se almacena un registro del historial.")
     @ApiResponses(value= {
@@ -556,24 +581,6 @@ public class AdminController {
             return ResponseEntity.ok().body(historyResponses);
         }
     }
-
-    /*
-    @GetMapping(value = "/inventory/report/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> generatePdfReport(HttpServletRequest request, HttpServletResponse response) {
-        WebContext context = new WebContext(request, response, servletContext);
-        context.setVariable("labs", labService.getAll());
-        log.info("{}", labService.getAll().get(0).getComputers());
-        String ireport = templateEngine.process("ireport", context);
-        ByteArrayOutputStream target = new ByteArrayOutputStream();
-        ConverterProperties converterProperties = new ConverterProperties();
-        converterProperties.setBaseUri("https://botics.loca.lt");
-        HtmlConverter.convertToPdf(ireport, target, converterProperties);
-        byte[] bytes = target.toByteArray();
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(bytes);
-    }
-     */
-
 
     @Operation(summary = "Endpoint para listar laboratorios y computadoras.", description = "Retorna un arreglo de laboratorios con sus respectivos arreglos de computadoras para generar el reporte en PDF.")
     @ApiResponses(value= {

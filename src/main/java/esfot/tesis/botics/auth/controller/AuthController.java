@@ -17,6 +17,8 @@ import esfot.tesis.botics.auth.security.service.RefreshTokenService;
 import esfot.tesis.botics.auth.security.service.UserDetailsImpl;
 import esfot.tesis.botics.auth.validator.SigninValidator;
 import esfot.tesis.botics.auth.validator.SignupValidator;
+import esfot.tesis.botics.payload.request.ProfileRequest;
+import esfot.tesis.botics.validator.ProfileValidator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -62,9 +64,11 @@ public class AuthController {
 
     private final SigninValidator signinValidator;
 
+    private final ProfileValidator profileValidator;
+
 
     @Autowired
-    public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository, RefreshTokenService refreshTokenService, RoleRepository roleRepository, PasswordEncoder encoder, JwtUtils jwtUtils, SignupValidator signupValidator, SigninValidator signinValidator) {
+    public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository, RefreshTokenService refreshTokenService, RoleRepository roleRepository, PasswordEncoder encoder, JwtUtils jwtUtils, SignupValidator signupValidator, SigninValidator signinValidator, ProfileValidator profileValidator) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.refreshTokenService = refreshTokenService;
@@ -73,6 +77,7 @@ public class AuthController {
         this.jwtUtils = jwtUtils;
         this.signupValidator = signupValidator;
         this.signinValidator = signinValidator;
+        this.profileValidator = profileValidator;
     }
 
     @Operation(summary = "Endpoint para iniciar sesión.", description = "Se otorgan los detalles del usuario junto con un token de autorización el cual caduca cada 15 minutos, a su vez almacena el token de reinicio en la base de datos.")
@@ -160,17 +165,17 @@ public class AuthController {
         strRoles.forEach(role -> {
             if ("admin".equals(role)) {
                 Role userRole = roleRepository.findByName(ERole.ROLE_ADMIN).
-                        orElseThrow(() -> new RuntimeException("Error: Role not found."));
+                        orElseThrow(() -> new RuntimeException("Error: Rol no encontrado."));
                 roles.add(userRole);
             }
             else if ("administrativo".equals(role)) {
                 Role userRole = roleRepository.findByName(ERole.ROLE_ADMINISTRATIVO).
-                        orElseThrow(() -> new RuntimeException("Error: Role not found."));
+                        orElseThrow(() -> new RuntimeException("Error: Rol no encontrado."));
                 roles.add(userRole);
             }
             else if ("profesor".equals(role)) {
                 Role userRole = roleRepository.findByName(ERole.ROLE_PROFESOR).
-                        orElseThrow(() -> new RuntimeException("Error: Role not found."));
+                        orElseThrow(() -> new RuntimeException("Error: Rol no encontrado."));
                 roles.add(userRole);
             }
             else {
@@ -181,6 +186,18 @@ public class AuthController {
             return ResponseEntity.ok(new MessageResponse("El rol especificado no es válido."));
         } else {
             user.setRoles(roles);
+            ProfileRequest profileRequest = new ProfileRequest(signUpRequest.getFirstName(), signUpRequest.getLastName(), 0);
+            if (signUpRequest.getFirstName() == "" || signUpRequest.getLastName() == "") {
+                return ResponseEntity.badRequest().body(new MessageResponse("Nombre o apellido no válidos."));
+            }
+            profileValidator.validate(profileRequest, bindingResult);
+            if (bindingResult.hasErrors()) {
+                bindingResult.getAllErrors().forEach(e -> errors.add(resourceBundleMessageSource.getMessage(e, Locale.US)));
+                return ResponseEntity.badRequest().body(new ErrorResponse("Errores en el formulario.",errors));
+            }
+            user.setFirstName(signUpRequest.getFirstName());
+            user.setLastName(signUpRequest.getLastName());
+            user.setExtension(0);
             userRepository.save(user);
             return ResponseEntity.ok(new MessageResponse("Usuario registrado."));
         }
