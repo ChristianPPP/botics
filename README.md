@@ -8,9 +8,9 @@ https://botics.azurewebsites.net/swagger-ui/index.html
 
 # 💻 APIS Privadas:
 
-![image](https://user-images.githubusercontent.com/74626089/221421532-a81fc241-9d15-45df-abdb-f4feb57e679f.png)
-
 ![image](https://user-images.githubusercontent.com/74626089/221421302-15517a91-7527-478a-be2f-cfbb69c31ea2.png)
+
+![image](https://user-images.githubusercontent.com/74626089/221421532-a81fc241-9d15-45df-abdb-f4feb57e679f.png)
 
 ![image](https://user-images.githubusercontent.com/74626089/221421350-a154f467-840e-4ecb-b360-95f887503b00.png)
 
