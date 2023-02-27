@@ -110,7 +110,7 @@ public class BoticsApplication {
 
 	@Bean
 	public OpenAPI customOpenAPI() {
-		return new OpenAPI().addServersItem(new Server().url("https://botics.azurewebsites.net")).addServersItem(new Server().url("http://localhost"))
+		return new OpenAPI().addServersItem(new Server().url("https://botics.azurewebsites.net"))
 				.components(new Components().addSecuritySchemes("Access Token",
 						new SecurityScheme().type(SecurityScheme.Type.APIKEY)
 								.in(SecurityScheme.In.HEADER).bearerFormat("jwt").name("Authorization")))

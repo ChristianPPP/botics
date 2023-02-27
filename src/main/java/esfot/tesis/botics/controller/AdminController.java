@@ -33,8 +33,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import org.thymeleaf.TemplateEngine;
-import javax.servlet.ServletContext;
 import java.util.*;
 
 @Slf4j
@@ -457,7 +455,7 @@ public class AdminController {
             computerService.saveComputer(computer);
             currentLab.getComputers().add(computer);
             labService.saveLab(currentLab);
-            history = new History(true, idLab, idComputer);
+            history = new History(true, idLab, idComputer, currentLab.getName().toString(), computer.getHostName(), computer.getCodeCpu());
             historyService.saveHistory(history);
             return ResponseEntity.ok().body(new MessageResponse("Computadora "+computer.getHostName()+" asignada al laboratorio "+currentLab.getName()+"."));
         }
@@ -560,12 +558,10 @@ public class AdminController {
             List<HistoryResponse> historyResponses = new ArrayList<>();
             histories.forEach(history -> {
                 HistoryResponse historyResponse = new HistoryResponse();
-                Lab lab = labService.getLabById(history.getLabReference());
-                Computer computer = computerService.getComputerByID(history.getComputerReference());
                 historyResponse.setId(history.getId());
-                historyResponse.setLabName(lab.getName().toString());
-                historyResponse.setHostName(computer.getHostName());
-                historyResponse.setCodeCpu(computer.getCodeCpu());
+                historyResponse.setLabName(history.getLabName());
+                historyResponse.setHostName(history.getHostName());
+                historyResponse.setCodeCpu(history.getCodeCpu());
                 historyResponse.setChangeDetails(history.getChangeDetails());
                 historyResponse.setState(history.isState());
                 historyResponse.setCreatedAt(history.getCreatedAt());

@@ -27,6 +27,15 @@ public class History {
     @Column(name = "change_details")
     private String changeDetails;
 
+    @Column(name = "lab_name")
+    private String labName;
+
+    @Column(name = "host_name")
+    private String hostName;
+
+    @Column(name = "code_cpu")
+    private String codeCpu;
+
     @Column(name = "lab_reference")
     private long labReference;
 
@@ -41,9 +50,12 @@ public class History {
     @UpdateTimestamp
     private Date updatedAt;
 
-    public History(boolean state, long labReference, long computerReference) {
+    public History(boolean state, long labReference, long computerReference, String labName, String hostName, String codeCpu) {
         this.state = state;
         this.labReference = labReference;
         this.computerReference = computerReference;
+        this.labName = labName;
+        this.hostName = hostName;
+        this.codeCpu = codeCpu;
     }
 }
