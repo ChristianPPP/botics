@@ -44,6 +44,10 @@ public class AvatarServiceImpl implements AvatarService{
         }
     }
 
+    public Avatar getAvatarByName(String name) {
+        return this.avatarRepository.findByName(name);
+    }
+
 
     private File convertMultiPartToFile(MultipartFile file) throws IOException {
         File convFile = new File(Objects.requireNonNull(file.getOriginalFilename()));

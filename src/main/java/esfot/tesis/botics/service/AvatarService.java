@@ -8,4 +8,5 @@ import java.io.IOException;
 public interface AvatarService {
     String saveFileToCloudinary(MultipartFile multipartFile) throws IOException;
     void save(Avatar avatar);
+    Avatar getAvatarByName(String name);
 }

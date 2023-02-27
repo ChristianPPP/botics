@@ -110,7 +110,7 @@ public class BoticsApplication {
 
 	@Bean
 	public OpenAPI customOpenAPI() {
-		return new OpenAPI().addServersItem(new Server().url("https://botics.loca.lt")).addServersItem(new Server().url("http://localhost:80")).addServersItem(new Server().url("https://botics.azurewebsites.net"))
+		return new OpenAPI().addServersItem(new Server().url("https://botics.azurewebsites.net")).addServersItem(new Server().url("http://localhost"))
 				.components(new Components().addSecuritySchemes("Access Token",
 						new SecurityScheme().type(SecurityScheme.Type.APIKEY)
 								.in(SecurityScheme.In.HEADER).bearerFormat("jwt").name("Authorization")))
@@ -118,5 +118,4 @@ public class BoticsApplication {
 						.license(new License().name("ESFOT").url("https://esfot.epn.edu.ec")))
 				.addSecurityItem(new SecurityRequirement().addList("Access Token"));
 	}
-	//filtrado por nombre
 }

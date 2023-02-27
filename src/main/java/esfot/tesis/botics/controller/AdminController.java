@@ -1,7 +1,5 @@
 package esfot.tesis.botics.controller;
 
-import com.itextpdf.html2pdf.ConverterProperties;
-import com.itextpdf.html2pdf.HtmlConverter;
 import esfot.tesis.botics.auth.entity.Role;
 import esfot.tesis.botics.auth.entity.User;
 import esfot.tesis.botics.auth.entity.enums.ERole;
@@ -30,19 +28,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.ResourceBundleMessageSource;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.WebContext;
-
 import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.ByteArrayOutputStream;
 import java.util.*;
 
 @Slf4j
@@ -68,11 +60,7 @@ public class AdminController {
 
     private final ComputerServiceImpl computerService;
 
-    private final ServletContext servletContext;
-
     private final HistoryServiceImpl historyService;
-
-    private final TemplateEngine templateEngine;
 
     private final ComputerValidator computerValidator;
 
@@ -82,8 +70,10 @@ public class AdminController {
 
     private final ProfileValidator profileValidator;
 
+    private final AvatarServiceImpl avatarService;
+
     @Autowired
-    public AdminController(UserServiceImpl userService, SignupValidator signupValidator, UserRepository userRepository, PasswordEncoder encoder, RoleRepository roleRepository, LabServiceImpl labService, ComputerServiceImpl computerService, ServletContext servletContext, HistoryServiceImpl historyService, TemplateEngine templateEngine, ComputerValidator computerValidator, InternController internController, CommentaryServiceImpl commentaryService, ProfileValidator profileValidator) {
+    public AdminController(UserServiceImpl userService, SignupValidator signupValidator, UserRepository userRepository, PasswordEncoder encoder, RoleRepository roleRepository, LabServiceImpl labService, ComputerServiceImpl computerService, HistoryServiceImpl historyService, ComputerValidator computerValidator, InternController internController, CommentaryServiceImpl commentaryService, ProfileValidator profileValidator, AvatarServiceImpl avatarService) {
         this.userService = userService;
         this.signupValidator = signupValidator;
         this.userRepository = userRepository;
@@ -91,13 +81,12 @@ public class AdminController {
         this.roleRepository = roleRepository;
         this.labService = labService;
         this.computerService = computerService;
-        this.servletContext = servletContext;
         this.historyService = historyService;
-        this.templateEngine = templateEngine;
         this.computerValidator = computerValidator;
         this.internController = internController;
         this.commentaryService = commentaryService;
         this.profileValidator = profileValidator;
+        this.avatarService = avatarService;
     }
 
 
@@ -179,19 +168,24 @@ public class AdminController {
         });
         user.setRoles(roles);
         ProfileRequest profileRequest = new ProfileRequest(signUpRequest.getFirstName(), signUpRequest.getLastName(), 0);
-        if (signUpRequest.getFirstName() == "" || signUpRequest.getLastName() == "") {
+        if (!Objects.equals(signUpRequest.getFirstName(), "") && !Objects.equals(signUpRequest.getLastName(), "")) {
+            profileValidator.validate(profileRequest, bindingResult);
+            if (bindingResult.hasErrors()) {
+                bindingResult.getAllErrors().forEach(e -> errors.add(resourceBundleMessageSource.getMessage(e, Locale.US)));
+                return ResponseEntity.badRequest().body(new ErrorResponse("Errores en el formulario.",errors));
+            } else {
+                user.setFirstName(signUpRequest.getFirstName());
+                user.setLastName(signUpRequest.getLastName());
+                user.setExtension(0);
+                Avatar newAvatar = new Avatar("default", "image/jpg", "https://res.cloudinary.com/botics/image/upload/v1675551261/default-profile-icon-24_oi9wti.jpg");
+                avatarService.save(newAvatar);
+                user.setAvatar(newAvatar);
+                userRepository.save(user);
+                return ResponseEntity.ok(new MessageResponse("Pasante registrado."));
+            }
+        } else {
             return ResponseEntity.badRequest().body(new MessageResponse("Nombre o apellido no válidos."));
         }
-        profileValidator.validate(profileRequest, bindingResult);
-        if (bindingResult.hasErrors()) {
-            bindingResult.getAllErrors().forEach(e -> errors.add(resourceBundleMessageSource.getMessage(e, Locale.US)));
-            return ResponseEntity.badRequest().body(new ErrorResponse("Errores en el formulario.",errors));
-        }
-        user.setFirstName(signUpRequest.getFirstName());
-        user.setLastName(signUpRequest.getLastName());
-        user.setExtension(0);
-        userRepository.save(user);
-        return ResponseEntity.ok(new MessageResponse("Pasante registrado."));
     }
 
 
